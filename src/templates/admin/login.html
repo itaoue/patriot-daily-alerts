@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Sign in — Newsroom</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}?v=2"></head>
+<body class="login">
+<form class="login__box" method="post">
+  <h1>🇺🇸 Newsroom</h1>
+  {% if not configured %}<p class="flash flash--error">ADMIN_PASSWORD is not set. Add it to your Railway variables to enable the newsroom.</p>{% endif %}
+  {% with messages = get_flashed_messages(with_categories=true) %}{% for cat, m in messages %}<p class="flash flash--{{ cat }}">{{ m }}</p>{% endfor %}{% endwith %}
+  <label>Password <input type="password" name="password" autofocus required></label>
+  <button class="btn" {% if not configured %}disabled{% endif %}>Sign in</button>
+</form>
+</body></html>

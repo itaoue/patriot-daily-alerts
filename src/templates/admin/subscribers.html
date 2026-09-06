@@ -1,0 +1,9 @@
+{% extends "admin/base.html" %}
+{% block title %}Subscribers{% endblock %}
+{% block content %}
+<div class="ah-row"><h1>Subscribers</h1><a class="btn" href="{{ url_for('admin.export_subscribers') }}">Export CSV</a></div>
+<table><thead><tr><th>Email</th><th>Source</th><th>Joined</th><th>Status</th></tr></thead><tbody>
+{% for s in pagination.items %}<tr><td>{{ s.email }}</td><td>{{ s.source }}</td><td>{{ s.created_at|date }}</td><td>{% if s.unsubscribed_at %}<span class="pill pill--draft">unsubscribed</span>{% else %}<span class="pill pill--published">active</span>{% endif %}</td></tr>{% endfor %}
+</tbody></table>
+<div class="ah-row">{% if pagination.has_prev %}<a href="?page={{ pagination.prev_num }}">← Prev</a>{% endif %}<span>{{ pagination.total }} total</span>{% if pagination.has_next %}<a href="?page={{ pagination.next_num }}">Next →</a>{% endif %}</div>
+{% endblock %}

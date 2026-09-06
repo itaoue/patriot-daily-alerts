@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block ticker %}
+{% if ticker %}
+<div class="ticker" aria-label="Breaking headlines">
+  <div class="container ticker__inner">
+    <span class="ticker__label">Breaking</span>
+    <div class="ticker__track" data-ticker>
+      <div class="ticker__items">
+        {% for p in ticker %}<a href="{{ p.url }}">{{ p.title }}</a>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block content %}
+{% if not lead %}
+<div class="empty"><h1>No stories yet.</h1><p>Sign in to <a href="/admin/">the newsroom</a> to publish your first story, or run the WordPress importer.</p></div>
+{% else %}
+<section class="hero">
+  <article class="hero__lead">
+    <a class="hero__media" href="{{ lead.url }}">
+      {% if lead.image_url %}<img src="{{ lead.image_url }}" alt="" fetchpriority="high" decoding="async">{% endif %}
+    </a>
+    <div class="hero__body">
+      <a class="kicker" href="{{ url_for('public.category', slug=lead.category.slug) }}">{{ lead.category.name }}</a>
+      <h1 class="hero__title"><a href="{{ lead.url }}">{{ lead.title }}</a></h1>
+      <p class="hero__excerpt">{{ lead.excerpt }}</p>
+      <div class="meta"><span>By {{ lead.author }}</span><span>·</span><time datetime="{{ lead.published_at.isoformat() }}">{{ lead.published_at|ago }}</time><span>·</span><span>{{ lead.reading_minutes }} min read</span></div>
+    </div>
+  </article>
+  <div class="hero__side">
+    <h2 class="section-title section-title--sm">Top stories</h2>
+    {% for p in top %}
+      {% with post=p, variant='row' %}{% include "partials/_card.html" %}{% endwith %}
+    {% endfor %}
+  </div>
+</section>
+
+<div class="layout">
+  <section class="main-col">
+    <div class="section-head">
+      <h2 class="section-title">Latest</h2>
+      <a class="section-more" href="{{ url_for('public.latest') }}">All stories →</a>
+    </div>
+    <div class="grid grid--3">
+      {% for p in latest %}
+        {% with post=p, variant='grid' %}{% include "partials/_card.html" %}{% endwith %}
+      {% endfor %}
+    </div>
+    {% if has_more %}<div class="center"><a class="btn btn--ghost" href="{{ url_for('public.latest', page=2) }}">Load older stories</a></div>{% endif %}
+  </section>
+  {% include "partials/_sidebar.html" %}
+</div>
+{% endif %}
+{% endblock %}

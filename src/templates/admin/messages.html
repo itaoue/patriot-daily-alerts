@@ -1,0 +1,8 @@
+{% extends "admin/base.html" %}
+{% block title %}Messages{% endblock %}
+{% block content %}
+<h1>Contact messages</h1>
+{% for m in messages %}
+<article class="msg"><header><b>{{ m.name or 'Anonymous' }}</b> &lt;{{ m.email }}&gt; · {{ m.created_at|datetime }}{% if m.subject %} · <em>{{ m.subject }}</em>{% endif %}</header><p>{{ m.message }}</p></article>
+{% else %}<p>No messages yet.</p>{% endfor %}
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ 'Edit' if post else 'New' }} story{% endblock %}
+{% block content %}
+<div class="ah-row"><h1>{{ 'Edit story' if post else 'New story' }}</h1>{% if post %}<a href="{{ post.url }}?preview=1" target="_blank">Preview ↗</a>{% endif %}</div>
+<form method="post" class="editor">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="editor__main">
+    <label>Headline <input name="title" required maxlength="300" value="{{ post.title if post else '' }}"></label>
+    <label>Dek / excerpt <textarea name="excerpt" rows="2" maxlength="500">{{ post.excerpt if post else '' }}</textarea></label>
+    <label>Body (HTML) <textarea name="body_html" rows="28" class="mono">{{ post.body_html if post else '' }}</textarea></label>
+  </div>
+  <aside class="editor__side">
+    <label>Status
+      <select name="status">
+        <option value="published" {{ 'selected' if post and post.status == 'published' }}>Published</option>
+        <option value="draft" {{ 'selected' if not post or post.status == 'draft' }}>Draft</option>
+      </select></label>
+    <label class="check"><input type="checkbox" name="featured" {{ 'checked' if post and post.featured }}> Pin as front-page lead</label>
+    <label>Section
+      <select name="category_id">{% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if post and post.category_id == c.id }}>{{ c.name }}</option>{% endfor %}</select></label>
+    <label>Publish time (UTC) <input type="datetime-local" name="published_at" value="{{ post.published_at.strftime('%Y-%m-%dT%H:%M') if post else '' }}"></label>
+    <label>Slug <input name="slug" value="{{ post.slug if post else '' }}" placeholder="auto from headline"></label>
+    <label>Author <input name="author" value="{{ post.author if post else 'Staff' }}"></label>
+    <label>Featured image URL <input name="image_url" value="{{ post.image_url if post else '' }}" placeholder="https://…"></label>
+    {% if post and post.image_url %}<img class="thumb" src="{{ post.image_url }}" alt="">{% endif %}
+    <button class="btn" type="submit">Save</button>
+    {% if post %}<button class="btn btn--danger" name="action" value="delete" onclick="return confirm('Delete this story permanently?')">Delete</button>{% endif %}
+  </aside>
+</form>
+{% endblock %}

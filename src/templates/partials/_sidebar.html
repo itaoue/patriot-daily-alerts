@@ -1,0 +1,23 @@
+<aside class="sidebar">
+  {% if most_read %}
+  <section class="widget">
+    <h2 class="widget__title">Most read</h2>
+    <ol class="ranked">
+      {% for p in most_read %}
+      <li>
+        <span class="ranked__num">{{ loop.index }}</span>
+        <div>
+          <a class="ranked__title" href="{{ p.url }}">{{ p.title }}</a>
+          <div class="meta"><time datetime="{{ p.published_at.isoformat() }}">{{ p.published_at|ago }}</time></div>
+        </div>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+  <section class="widget widget--signup">
+    <p class="kicker">Newsletter</p>
+    <h2 class="widget__title widget__title--big">Real American news in your inbox.</h2>
+    {% with source='sidebar' %}{% include "partials/_subscribe_form.html" %}{% endwith %}
+  </section>
+</aside>

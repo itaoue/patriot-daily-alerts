@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Remove From Our Email List — {{ site_name }}{% endblock %}
+{% block content %}
+<article class="static-page static-page--narrow">
+  <header class="archive-head"><h1>Remove From Our Email List</h1></header>
+  {% if done %}
+  <p class="alert alert--ok">If <strong>{{ email }}</strong> was on our list, it has been removed. You will not receive further emails from us.</p>
+  {% else %}
+  <p>Enter the address you want removed. You can also click the unsubscribe link at the bottom of any email we send, or write to <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
+  <form class="form card-box" action="{{ url_for('api.unsubscribe') }}" method="post">
+    <label>Email <input type="email" name="email" value="{{ email }}" required></label>
+    <button class="btn btn--navy" type="submit">Unsubscribe</button>
+  </form>
+  {% endif %}
+</article>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "admin/base.html" %}
+{% block title %}Edit page{% endblock %}
+{% block content %}
+<div class="ah-row"><h1>{{ page.title }}</h1><a href="/{{ page.slug }}/" target="_blank">View ↗</a></div>
+<form method="post" class="editor editor--single">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Title <input name="title" value="{{ page.title }}" required></label>
+  <label>Body (HTML) <textarea name="body_html" rows="30" class="mono">{{ page.body_html }}</textarea></label>
+  <button class="btn">Save</button>
+</form>
+{% endblock %}

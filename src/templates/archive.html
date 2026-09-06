@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — {{ site_name }}{% endblock %}
+{% block description %}{{ description }}{% endblock %}
+{% block content %}
+<div class="layout">
+  <section class="main-col">
+    <header class="archive-head">
+      <h1>{{ title }}</h1>
+      {% if description %}<p>{{ description }}</p>{% endif %}
+      {% if search_term is defined %}
+      <form class="search search--inline" action="{{ url_for('public.search') }}" role="search">
+        <input type="search" name="q" value="{{ search_term }}" placeholder="Search stories…" aria-label="Search">
+        <button class="btn btn--navy" type="submit">Search</button>
+      </form>
+      {% endif %}
+    </header>
+    {% if pagination and pagination.items %}
+    <div class="list">
+      {% for p in pagination.items %}
+        {% with post=p, variant='row' %}{% include "partials/_card.html" %}{% endwith %}
+      {% endfor %}
+    </div>
+    {% include "partials/_pagination.html" %}
+    {% elif pagination %}
+    <p class="empty">Nothing found. Try a different search.</p>
+    {% endif %}
+  </section>
+  {% include "partials/_sidebar.html" %}
+</div>
+{% endblock %}

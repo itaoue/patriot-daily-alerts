@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>{{ site_url }}/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>
+  {% for c in categories %}<url><loc>{{ site_url }}/category/{{ c.slug }}/</loc><changefreq>hourly</changefreq><priority>0.8</priority></url>
+  {% endfor %}{% for p in posts %}<url><loc>{{ site_url }}{{ p.url }}</loc><lastmod>{{ p.updated_at.strftime('%Y-%m-%d') }}</lastmod><priority>0.7</priority></url>
+  {% endfor %}{% for pg in pages %}<url><loc>{{ site_url }}/{{ pg.slug }}/</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
+  {% endfor %}
+</urlset>

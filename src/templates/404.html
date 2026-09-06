@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Page not found — {{ site_name }}{% endblock %}
+{% block content %}
+<article class="static-page static-page--narrow center">
+  <p class="kicker">404</p>
+  <h1>We couldn’t find that page.</h1>
+  <p>It may have moved or been removed. <a href="/">Head back to the front page</a> or search below.</p>
+  <form class="search search--inline" action="{{ url_for('public.search') }}" role="search">
+    <input type="search" name="q" placeholder="Search stories…" aria-label="Search"><button class="btn btn--navy">Search</button>
+  </form>
+</article>
+{% endblock %}

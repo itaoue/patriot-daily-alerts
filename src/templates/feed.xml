@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<channel>
+  <title>{{ site_name }}</title>
+  <link>{{ site_url }}/</link>
+  <atom:link href="{{ site_url }}/feed/" rel="self" type="application/rss+xml"/>
+  <description>{{ site_tagline }}</description>
+  <language>en-US</language>
+  <lastBuildDate>{{ now.strftime('%a, %d %b %Y %H:%M:%S +0000') }}</lastBuildDate>
+  {% for p in posts %}
+  <item>
+    <title>{{ p.title|e }}</title>
+    <link>{{ site_url }}{{ p.url }}</link>
+    <guid isPermaLink="true">{{ site_url }}{{ p.url }}</guid>
+    <pubDate>{{ p.published_at.strftime('%a, %d %b %Y %H:%M:%S +0000') }}</pubDate>
+    <category>{{ p.category.name|e }}</category>
+    <description>{{ p.excerpt|e }}</description>
+    {% if p.image_url %}<enclosure url="{{ p.image_url|e }}" type="image/jpeg" length="0"/>{% endif %}
+    <content:encoded><![CDATA[{{ p.body_html }}]]></content:encoded>
+  </item>
+  {% endfor %}
+</channel>
+</rss>

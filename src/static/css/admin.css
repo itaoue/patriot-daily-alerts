@@ -1,0 +1,25 @@
+:root{--navy:#0C1F3D;--red:#B3202E;--bg:#f4f5f7;--line:#dfe3ea;--ink:#1a1f2b;--muted:#5f6675}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
+a{color:var(--navy)}h1{font-size:26px;margin:0 0 16px}h2{font-size:18px;margin:28px 0 10px}
+.ah{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 24px;background:var(--navy);color:#fff;flex-wrap:wrap}
+.ah__brand{color:#fff;text-decoration:none;font-weight:700}.ah__brand span{opacity:.7;font-weight:400;margin-left:6px}
+.ah nav{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.ah nav a{color:#fff;text-decoration:none;opacity:.85;font-size:14px}.ah nav a:hover{opacity:1}
+.ah nav form{display:inline}.ah nav button{background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px}
+.aw{max-width:1200px;margin:0 auto;padding:28px 24px}
+.ah-row{display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}.ah-row h1{margin:0}
+.inline{display:flex;gap:6px}.inline input{padding:8px 10px;border:1px solid var(--line);border-radius:6px}
+.btn{display:inline-block;background:var(--red);color:#fff;border:0;border-radius:8px;padding:10px 16px;font-weight:600;text-decoration:none;cursor:pointer;font-size:14px}
+.btn--danger{background:#fff;color:var(--red);border:1px solid var(--red)}
+button:not(.btn){padding:8px 12px;border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}.stats div{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px}.stats b{display:block;font-size:30px;line-height:1}.stats span{color:var(--muted);font-size:13px}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}th{background:#f8f9fb;color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600}.pill--published{background:#e3f5e8;color:#1c6b32}.pill--draft{background:#fff1d6;color:#8a5a00}
+.flash{padding:10px 14px;border-radius:8px;background:#e3f5e8;color:#1c6b32;margin-bottom:16px}.flash--error{background:#fde8e8;color:#9b1c1c}
+.editor{display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start}.editor--single{grid-template-columns:1fr}
+.editor label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:14px}.editor label.check{display:flex;align-items:center;gap:8px}
+.editor input:not([type=checkbox]),.editor textarea,.editor select{display:block;width:100%;margin-top:6px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff;color:var(--ink)}
+.editor input[name=title]{font-size:20px;font-weight:600}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace!important;font-size:13px!important;line-height:1.5}
+.editor__side{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;position:sticky;top:16px}.editor__side .btn{width:100%;margin-top:6px}.thumb{width:100%;border-radius:8px;margin-bottom:12px}
+.msg{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px}.msg header{font-size:13px;color:var(--muted);margin-bottom:6px}.msg p{margin:0;white-space:pre-wrap}
+.login{display:grid;place-items:center;min-height:100vh}.login__box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:32px;width:min(380px,92vw)}.login__box h1{margin-top:0}.login__box label{display:block;font-size:13px;color:var(--muted);font-weight:600}.login__box input{display:block;width:100%;margin:6px 0 16px;padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit}.login__box .btn{width:100%}
+@media(max-width:800px){.editor{grid-template-columns:1fr}.editor__side{position:static}}

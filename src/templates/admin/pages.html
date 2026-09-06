@@ -1,0 +1,8 @@
+{% extends "admin/base.html" %}
+{% block title %}Pages{% endblock %}
+{% block content %}
+<h1>Pages</h1>
+<table><thead><tr><th>Title</th><th>URL</th><th>Updated</th></tr></thead><tbody>
+{% for pg in pages %}<tr><td><a href="{{ url_for('admin.edit_page', page_id=pg.id) }}">{{ pg.title }}</a></td><td><a href="/{{ pg.slug }}/" target="_blank">/{{ pg.slug }}/</a></td><td>{{ pg.updated_at|date }}</td></tr>{% endfor %}
+</tbody></table>
+{% endblock %}

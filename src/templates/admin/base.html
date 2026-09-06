@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{% block title %}Newsroom{% endblock %} — {{ site_name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}?v=2">
+</head>
+<body>
+<header class="ah">
+  <a class="ah__brand" href="{{ url_for('admin.dashboard') }}">🇺🇸 {{ site_name }} <span>Newsroom</span></a>
+  <nav>
+    <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('admin.posts') }}">Stories</a>
+    <a href="{{ url_for('admin.pages') }}">Pages</a>
+    <a href="{{ url_for('admin.subscribers') }}">Subscribers</a>
+    <a href="{{ url_for('admin.messages') }}">Messages</a>
+    <a href="/" target="_blank">View site ↗</a>
+    <form action="{{ url_for('admin.logout') }}" method="post"><input type="hidden" name="csrf" value="{{ csrf }}"><button>Log out</button></form>
+  </nav>
+</header>
+<main class="aw">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, m in messages %}<p class="flash flash--{{ cat }}">{{ m }}</p>{% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

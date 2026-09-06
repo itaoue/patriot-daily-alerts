@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ 'You’re subscribed' if ok else 'Check your email' }} — {{ site_name }}{% endblock %}
+{% block content %}
+<article class="static-page static-page--narrow center">
+  {% if ok %}
+  <h1>You’re on the list.</h1>
+  <p>We’ll send the next {{ site_name }} email to <strong>{{ email }}</strong>. <a href="/">Back to the front page →</a></p>
+  {% else %}
+  <h1>That email didn’t look right.</h1>
+  <p>Please <a href="/#newsletter">go back and try again</a>.</p>
+  {% endif %}
+</article>
+{% endblock %}

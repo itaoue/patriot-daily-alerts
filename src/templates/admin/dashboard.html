@@ -1,0 +1,18 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="ah-row"><h1>Dashboard</h1><a class="btn" href="{{ url_for('admin.new_post') }}">+ New story</a></div>
+<div class="stats">
+  <div><b>{{ stats.posts }}</b><span>stories</span></div>
+  <div><b>{{ stats.drafts }}</b><span>drafts</span></div>
+  <div><b>{{ stats.subscribers }}</b><span>active subscribers</span></div>
+  <div><b>{{ stats.messages }}</b><span>messages</span></div>
+</div>
+<h2>Recently edited</h2>
+<table>
+  <thead><tr><th>Title</th><th>Section</th><th>Status</th><th>Views</th><th>Published</th></tr></thead>
+  <tbody>{% for p in recent %}
+  <tr><td><a href="{{ url_for('admin.edit_post', post_id=p.id) }}">{{ p.title }}</a>{% if p.featured %} <em>★ lead</em>{% endif %}</td><td>{{ p.category.name }}</td><td><span class="pill pill--{{ p.status }}">{{ p.status }}</span></td><td>{{ p.views }}</td><td>{{ p.published_at|date }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% endblock %}

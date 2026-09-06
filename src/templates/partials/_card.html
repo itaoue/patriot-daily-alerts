@@ -1,0 +1,14 @@
+{# usage: {% with post=p, variant='grid'|'row'|'compact' %}{% include 'partials/_card.html' %}{% endwith %} #}
+<article class="card card--{{ variant or 'grid' }}">
+  {% if post.image_url and variant != 'compact' %}
+  <a class="card__media" href="{{ post.url }}" tabindex="-1" aria-hidden="true">
+    <img src="{{ post.image_url }}" alt="" loading="lazy" decoding="async">
+  </a>
+  {% endif %}
+  <div class="card__body">
+    <a class="kicker" href="{{ url_for('public.category', slug=post.category.slug) }}">{{ post.category.name }}</a>
+    <h3 class="card__title"><a href="{{ post.url }}">{{ post.title }}</a></h3>
+    {% if variant != 'compact' and post.excerpt %}<p class="card__excerpt">{{ post.excerpt }}</p>{% endif %}
+    <div class="meta"><time datetime="{{ post.published_at.isoformat() }}">{{ post.published_at|ago }}</time><span>·</span><span>{{ post.reading_minutes }} min read</span></div>
+  </div>
+</article>
