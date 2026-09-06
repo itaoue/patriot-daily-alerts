@@ -85,3 +85,10 @@ def test_admin_requires_login_then_can_publish(client):
     assert b"Hello Newsroom" in client.get("/hello-newsroom/").data
     # CSRF token required
     assert client.post(f"/admin/posts/{post.id}", data={"title": "x", "category_id": 1}).status_code == 400
+
+
+def test_admin_import_page_and_status(client):
+    r = client.get("/admin/import")
+    assert r.status_code == 200 and b"Start import" in r.data
+    s = client.get("/admin/import/status").get_json()
+    assert s["state"] == "idle" and s["posts_in_db"] >= 20

@@ -2,7 +2,7 @@ import secrets
 from datetime import datetime
 from functools import wraps
 
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 
 from src.models import Category, ContactMessage, Page, Post, Subscriber, db, utcnow
 from src.utils import make_excerpt, sanitize_html, slugify
@@ -168,3 +168,30 @@ def export_subscribers():
 def messages():
     msgs = ContactMessage.query.order_by(ContactMessage.created_at.desc()).limit(200).all()
     return render_template("admin/messages.html", messages=msgs)
+
+
+@admin_bp.route("/import", methods=["GET", "POST"])
+@login_required
+def import_wp():
+    from src.importer import get_status, start_background_import
+
+    if request.method == "POST":
+        source = (request.form.get("source") or "https://patriotdailyalerts.com").strip().rstrip("/")
+        if not source.startswith("https://"):
+            abort(400)
+        max_posts = max(0, request.form.get("max_posts", 300, type=int))
+        app = current_app._get_current_object()
+        if start_background_import(app, source, max_posts):
+            flash("Import started. This page refreshes itself; you can leave and come back.", "ok")
+        else:
+            flash("An import is already running.", "error")
+        return redirect(url_for("admin.import_wp"))
+    return render_template("admin/import.html", status=get_status(), post_count=Post.query.count(), page_count=Page.query.count())
+
+
+@admin_bp.route("/import/status")
+@login_required
+def import_status():
+    from src.importer import get_status
+
+    return jsonify({**get_status(), "posts_in_db": Post.query.count()})

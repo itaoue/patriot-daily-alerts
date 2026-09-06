@@ -64,9 +64,11 @@ ruff check src tools tests && pytest -q
 5. **Settings → Networking** 生成域名，测试无误后绑定 `patriotdailyalerts.com` 自定义域名，并把 DNS 的 CNAME 指向 Railway。
 6. 之后每次 `git push main`，GitHub Actions 跑测试，Railway 自动重新部署。
 
-## 从旧 WordPress 站导入全部文章
+## 从旧 WordPress 站导入文章
 
-旧站仍在线时，用它的公开 REST API 把全部内容迁进来（约 5 分钟，可重复执行，按 WordPress ID 去重更新）：
+**最简单的方式**：登录后台 → **Import** 页（`/admin/import`），填数量（默认最新 300 篇，0 = 全部）点 **Start import**。导入在 Railway 服务内部后台执行，页面自动刷新进度，不需要任何命令行或公网数据库地址。
+
+也可以用命令行（约 5 分钟，可重复执行，按 WordPress ID 去重更新）：
 
 ```bash
 # 本地（连接线上库）：
@@ -76,7 +78,7 @@ DATABASE_URL='postgresql://...railway...' python tools/import_wp.py
 railway run python tools/import_wp.py
 ```
 
-可加 `--max 300` 只导入最新 300 篇。导入完成后建议把 `AUTO_SEED` 设为 `0`。
+可加 `--max 300` 只导入最新 300 篇。导入完成后建议把 Railway 里的 `AUTO_SEED` 设为 `0`。
 
 > 图片：导入的文章沿用旧站 `wp-content/uploads` 的图片 URL。旧站下线前，请把 `uploads` 目录同步到对象存储（如 Cloudflare R2 / S3），然后在数据库里批量替换域名即可。Railway 的文件系统是临时的，不适合直接存图片，所以后台的封面图字段采用 URL 而非上传。
 
@@ -88,6 +90,7 @@ src/
   config.py          # 环境变量 → 配置
   models.py          # Category / Post / Page / Subscriber / ContactMessage
   seed.py            # 首次启动的示例数据
+  importer.py        # WordPress REST API 导入逻辑（后台按钮 + CLI 共用）
   utils.py           # slug、HTML 过滤、日期格式化
   routes/
     public.py        # 前台页面、RSS、sitemap、robots
@@ -96,7 +99,7 @@ src/
   templates/         # Jinja2 模板（partials/ 为公共片段，admin/ 为后台）
   static/            # site.css / admin.css / site.js / 图标
 tools/
-  import_wp.py       # WordPress REST API 导入器
+  import_wp.py       # 导入器的命令行入口
   seed_data.json     # 旧站快照
 tests/test_app.py    # 端到端冒烟测试
 Procfile / railway.json / runtime.txt / requirements.txt

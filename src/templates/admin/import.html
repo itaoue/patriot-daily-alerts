@@ -1,0 +1,32 @@
+{% extends "admin/base.html" %}
+{% block title %}Import from WordPress{% endblock %}
+{% block content %}
+<h1>Import from WordPress</h1>
+<p>Pulls stories and the About / Contact / Privacy / Terms / Report Spam pages from the old site’s public REST API and runs in the background on this server. Safe to re-run: stories are matched by WordPress ID and updated in place.</p>
+<div class="stats">
+  <div><b>{{ post_count }}</b><span>stories in database</span></div>
+  <div><b>{{ page_count }}</b><span>pages in database</span></div>
+  <div><b id="st-state">{{ status.state }}</b><span>import status</span></div>
+</div>
+<p id="st-progress" class="flash {{ 'flash--error' if status.state == 'failed' }}" {% if not status.get('progress') and not status.get('error') %}hidden{% endif %}>{{ status.get('error') or status.get('progress') }}</p>
+<form method="post" class="editor editor--single" style="max-width:520px">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Source site <input name="source" value="https://patriotdailyalerts.com"></label>
+  <label>Newest stories to import (0 = all ≈ 2,250) <input type="number" name="max_posts" value="300" min="0"></label>
+  <button class="btn" {% if status.state == 'running' %}disabled{% endif %}>Start import</button>
+</form>
+<script>
+(function(){
+  var state = document.getElementById('st-state'), prog = document.getElementById('st-progress');
+  function poll(){
+    fetch('{{ url_for('admin.import_status') }}').then(function(r){return r.json()}).then(function(s){
+      state.textContent = s.state + (s.posts_in_db != null ? ' · ' + s.posts_in_db + ' stories' : '');
+      var m = s.error || s.progress; if (m) { prog.hidden = false; prog.textContent = m; prog.className = 'flash' + (s.state === 'failed' ? ' flash--error' : ''); }
+      if (s.state === 'running') setTimeout(poll, 2500); else if (state.dataset.was === 'running') location.reload();
+      state.dataset.was = s.state;
+    });
+  }
+  {% if status.state == 'running' %}poll();{% endif %}
+})();
+</script>
+{% endblock %}

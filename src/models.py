@@ -76,3 +76,11 @@ class ContactMessage(db.Model):
     subject = db.Column(db.String(200), default="")
     message = db.Column(db.Text, default="")
     created_at = db.Column(db.DateTime, default=utcnow)
+
+
+class Setting(db.Model):
+    """Small key/value store for app state (e.g. import progress)."""
+
+    __tablename__ = "settings"
+    key = db.Column(db.String(80), primary_key=True)
+    value = db.Column(db.Text, default="")
