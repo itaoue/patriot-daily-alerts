@@ -138,7 +138,7 @@ def render(leads, trending, edition, date_et, campaign, view_url):
 </style>
 </head>
 <body style="margin:0;padding:0;background:{BG};">
-<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">{esc(CONFIG["from_name"])} - {edition.upper()} Newsletter &middot; {esc(preheader)}{pad}</div>
+<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">{esc(preheader)}{pad}</div>
 <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:{BG};">
 <tr><td align="center" style="padding:18px 8px;">
 <table role="presentation" class="wrap" width="600" border="0" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:{PAPER};">
@@ -146,7 +146,7 @@ def render(leads, trending, edition, date_et, campaign, view_url):
   <tr><td style="padding:8px 25px 0;font-family:{FONT};font-size:11px;color:{GREY};text-align:right;"><a href="{view_url}" target="_blank" style="color:{GREY};text-decoration:underline;">View online</a></td></tr>
   <tr><td align="center" style="padding:14px 25px 12px;"><a href="{SITE}/?utm_source=newsletter&utm_medium=email&utm_campaign={campaign}" target="_blank"><img src="{SITE}/static/img/logo.png" width="360" alt="{esc(CONFIG["from_name"])}" style="display:block;width:360px;max-width:100%;height:auto;"></a></td></tr>
   <tr><td bgcolor="{NAVY}" style="background:{NAVY};padding:10px 25px;font-family:{FONT};font-size:12px;line-height:130%;color:#ffffff;text-align:center;letter-spacing:.08em;text-transform:uppercase;">
-    <strong>{esc(CONFIG["tagline"])}</strong><br><span style="color:#c9d1e3;letter-spacing:.04em;">{edition.upper()} Newsletter &middot; {date_et.strftime("%A, %B %-d, %Y")}</span></td></tr>
+    <strong>{esc(CONFIG["tagline"])}</strong><br><span style="color:#c9d1e3;letter-spacing:.04em;">{date_et.strftime("%A, %B %-d, %Y")}</span></td></tr>
 
   {blocks}
   {trending_block(trending, campaign)}
@@ -160,7 +160,7 @@ def render(leads, trending, edition, date_et, campaign, view_url):
 </table>
 </td></tr></table>
 </body></html>'''
-    text = (f"{CONFIG['from_name']} - {edition.upper()} Newsletter - {date_et.strftime('%A, %B %d, %Y')}\n\n"
+    text = (f"{CONFIG['from_name']} - {date_et.strftime('%A, %B %d, %Y')}\n\n"
             + "\n\n".join(f"{p['title']}\n{link(p, campaign)}" for p in leads)
             + ("\n\nALSO TRENDING\n" + "\n".join(f"- {p['title']}\n  {link(p, campaign)}" for p in trending) if trending else "")
             + f"\n\nUnsubscribe: *|UNSUB|*\n{CONFIG['postal_address']}\n")
