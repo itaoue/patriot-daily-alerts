@@ -1,7 +1,7 @@
 import os
 from datetime import timedelta
 
-from flask import Blueprint, Response, abort, current_app, redirect, render_template, request, send_from_directory, url_for
+from flask import Blueprint, Response, abort, current_app, redirect, render_template, request, send_from_directory, session, url_for
 from sqlalchemy import or_
 
 from src.models import Category, Page, Post, db, utcnow
@@ -140,8 +140,8 @@ def article_or_page(slug):
         abort(404)
     post = Post.query.filter_by(slug=slug).first()
     if post:
-        if not post.is_published and not request.args.get("preview"):
-            abort(404)
+        if not post.is_published and not (request.args.get("preview") and session.get("admin")):
+            abort(404)  # drafts are visible only to a signed-in editor
         # lightweight popularity counter (no extra table)
         Post.query.filter_by(id=post.id).update({Post.views: Post.views + 1})
         db.session.commit()

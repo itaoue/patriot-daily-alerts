@@ -147,7 +147,15 @@ def test_publish_api_requires_token_and_creates_draft(client):
     j = r.get_json()
     assert j["status"] == "draft" and j["slug"] == "pipeline-story"
     assert client.get("/pipeline-story/").status_code == 404  # drafts are not public
+    with client.session_transaction() as sess:
+        was_admin = sess.get("admin")
+        sess["admin"] = False
+    assert client.get("/pipeline-story/?preview=1").status_code == 404  # preview needs an editor session
+    with client.session_transaction() as sess:
+        sess["admin"] = True
     assert client.get("/pipeline-story/?preview=1").status_code == 200
+    with client.session_transaction() as sess:
+        sess["admin"] = was_admin
     post = Post.query.filter_by(slug="pipeline-story").first()
     assert post.category.slug == "economy" and "<script>" not in post.body_html and post.source_list[0]["label"] == "Newsmax"
     assert client.post("/api/publish", json=body, headers={"Authorization": "Bearer t0k3n"}).status_code == 409
