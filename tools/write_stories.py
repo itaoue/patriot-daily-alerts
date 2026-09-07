@@ -15,7 +15,8 @@ against the notes; (4) a photo is attached (licensed Wikimedia photo of the publ
 xAI-generated editorial image) and saved under src/static/uploads/yyyy/mm/ for git; (5) the story
 is POSTed to /api/publish. Picks go to content/radar/used.json so a story is never written twice.
 
-Environment: ANTHROPIC_API_KEY, XAI_API_KEY, PUBLISH_TOKEN, SITE_URL (default https://patriotdailyalerts.com).
+Environment: ANTHROPIC_API_KEY, XAI_API_KEY, PUBLISH_TOKEN, SITE_URL (default https://patriotdailyalerts.com),
+STORY_AUTHOR (byline, default "Joseph Sosa" — the site's existing byline).
 """
 import argparse
 import datetime as dt
@@ -188,7 +189,7 @@ def attach_image(art, slug, date, no_image):
 def publish(art, status, notes, image_url, token, site_recent_slugs):
     slug = re.sub(r"[^a-z0-9-]", "", art["slug"].lower().replace(" ", "-")).strip("-")[:80] or "story"
     payload = {"title": art["title"], "slug": slug, "excerpt": art["excerpt"], "category": art["category"], "body_html": art["body_html"],
-               "sources": art["sources"], "image_url": image_url, "status": status, "editor_notes": notes, "author": os.environ.get("STORY_AUTHOR", "Staff")}
+               "sources": art["sources"], "image_url": image_url, "status": status, "editor_notes": notes, "author": os.environ.get("STORY_AUTHOR", "Joseph Sosa")}
     r = requests.post(f"{SITE}/api/publish", json=payload, headers={"Authorization": f"Bearer {token}"}, timeout=60)
     if r.status_code == 409:
         payload["slug"] = f"{slug}-{dt.date.today().strftime('%m%d')}"

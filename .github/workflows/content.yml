@@ -25,6 +25,7 @@ jobs:
       XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
       PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
       SITE_URL: ${{ vars.SITE_URL || 'https://patriotdailyalerts.com' }}
+      STORY_AUTHOR: ${{ vars.STORY_AUTHOR || 'Joseph Sosa' }}   # byline on pipeline stories; override in repo Variables
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
