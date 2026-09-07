@@ -34,7 +34,7 @@ class Config:
     BIGMAILER_BRAND_ID = os.environ.get("BIGMAILER_BRAND_ID", "")
     BIGMAILER_LIST_ID = os.environ.get("BIGMAILER_LIST_ID", "")
 
-    GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", "")
+    GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", "G-7J6WNSF6DJ")  # GA4 property 371513253
 
     POSTS_PER_PAGE = 12
     SESSION_COOKIE_HTTPONLY = True
