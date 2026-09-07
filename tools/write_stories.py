@@ -16,7 +16,9 @@ xAI-generated editorial image) and saved under src/static/uploads/yyyy/mm/ for g
 is POSTed to /api/publish. Picks go to content/radar/used.json so a story is never written twice.
 
 Environment: ANTHROPIC_API_KEY, XAI_API_KEY, PUBLISH_TOKEN, SITE_URL (default https://patriotdailyalerts.com),
-STORY_AUTHOR (byline, default "Joseph Sosa" — the site's existing byline).
+STORY_AUTHOR (byline, default "Joseph Sosa"), STORY_EFFORT (default medium), and optional model overrides
+STORY_MODEL / RESEARCH_MODEL / EDITOR_MODEL (default claude-opus-5 for all three). Every call prints its token
+usage and an estimated cost; the run ends with a total.
 """
 import argparse
 import datetime as dt
@@ -36,7 +38,14 @@ USED = RADAR / "used.json"
 UPLOADS = ROOT / "src" / "static" / "uploads"
 sys.path.insert(0, str(ROOT / "tools"))
 
-MODEL = "claude-opus-5"
+MODEL = os.environ.get("STORY_MODEL", "claude-opus-5")            # writing
+RESEARCH_MODEL = os.environ.get("RESEARCH_MODEL", MODEL)              # web research (set claude-sonnet-5 to cut cost further)
+EDITOR_MODEL = os.environ.get("EDITOR_MODEL", MODEL)                  # editor + revision passes
+EFFORT = os.environ.get("STORY_EFFORT", "medium")                     # low | medium | high — medium matches high on research work at ~75% cost
+PRICES = {  # $ per million tokens: input, output, cache read, cache write
+    "claude-opus-5": (5.0, 25.0, 0.5, 6.25), "claude-sonnet-5": (2.0, 10.0, 0.2, 2.5), "claude-haiku-4-5": (1.0, 5.0, 0.1, 1.25),
+}
+USAGE = {"calls": 0, "cost": 0.0, "story": 0.0}
 CATEGORIES = ["politics", "culture", "economy", "world", "border"]
 SITE = os.environ.get("SITE_URL", "https://patriotdailyalerts.com").rstrip("/")
 
@@ -113,14 +122,34 @@ def choose(clusters, count, used, site_recent):
     return picks[:count]
 
 
+def record_usage(msg, model):
+    u = msg.usage
+    inp, out = u.input_tokens, u.output_tokens
+    cr = getattr(u, "cache_read_input_tokens", 0) or 0
+    cw = getattr(u, "cache_creation_input_tokens", 0) or 0
+    pi, po, pr, pw = PRICES.get(model, PRICES["claude-opus-5"])
+    searches = 0
+    st = getattr(u, "server_tool_use", None)
+    if st is not None:
+        searches = getattr(st, "web_search_requests", 0) or 0
+    cost = (inp * pi + out * po + cr * pr + cw * pw) / 1e6 + searches * 0.01
+    USAGE["calls"] += 1
+    USAGE["cost"] += cost
+    USAGE["story"] += cost
+    print(f"    usage: in={inp} cache_read={cr} cache_write={cw} out={out} searches={searches} -> ${cost:.3f}")
+
+
 def stream_text(client, **kwargs):
-    """One streamed request; retries overloaded / 5xx / connection errors a few times on top of the SDK's own retries."""
+    """One streamed request at the configured effort; retries overloaded / 5xx / connection errors on top of the SDK's own retries."""
     import anthropic
 
+    kwargs["output_config"] = {**kwargs.get("output_config", {}), "effort": EFFORT}
     for attempt in range(4):
         try:
             with client.messages.stream(**kwargs) as stream:
-                return stream.get_final_message()
+                msg = stream.get_final_message()
+            record_usage(msg, kwargs.get("model", MODEL))
+            return msg
         except (anthropic.APIConnectionError, anthropic.RateLimitError, anthropic.InternalServerError) as exc:
             wait = 30 * (attempt + 1)
             print(f"  transient API error ({exc.__class__.__name__}); retrying in {wait}s")
@@ -136,20 +165,21 @@ def stream_text(client, **kwargs):
 
 
 def research(client, c):
-    tools = [{"type": "web_search_20260209", "name": "web_search", "max_uses": 6},
-             {"type": "web_fetch_20260209", "name": "web_fetch", "max_uses": 6, "max_content_tokens": 30000}]
+    tools = [{"type": "web_search_20260209", "name": "web_search", "max_uses": 3},
+             {"type": "web_fetch_20260209", "name": "web_fetch", "max_uses": 3, "max_content_tokens": 6000}]
     outlets = "\n".join(f"- {o['name']}: {o['title']} <{o['url']}>" for o in c["outlets"][:5])
     ask = (f"Research this developing story for a news write-up. Do not write the story yet.\n\nWorking headline: {c['title']}\n"
            f"Outlets covering it (links may be Google News redirects; if so, search the headline with the outlet name and fetch the outlet's page):\n{outlets}\n\n"
-           "Read two or three of these stories, then look for the PRIMARY source behind them (court filing, official statement or press release, "
-           "the post on X, transcript, government data) and read it if you can.\n"
-           "Return plain-text notes: (1) for each source read: canonical URL, publisher, author, date; (2) the news in two sentences; "
+           "Read two of these stories (at most three fetches in total, so spend one on the PRIMARY source behind them if there is one: "
+           "court filing, official statement or press release, the post on X, transcript, government data).\n"
+           "Return compact plain-text notes, under 700 words: (1) for each source read: canonical URL, publisher, author, date; (2) the news in two sentences; "
            "(3) every specific fact, number, date, name and named source, one per line, each tagged with which source it came from; "
            "(4) up to four short direct quotes, verbatim, with who said them and where; (5) what is disputed, unconfirmed, or only claimed by one outlet; "
            "(6) the timeline and what happens next.")
     messages = [{"role": "user", "content": ask}]
-    for _ in range(5):
-        msg = stream_text(client, model=MODEL, max_tokens=16000, tools=tools, messages=messages)
+    for _ in range(3):
+        # top-level cache_control: every continuation turn re-reads the growing conversation from cache instead of at full price
+        msg = stream_text(client, model=RESEARCH_MODEL, max_tokens=12000, tools=tools, messages=messages, cache_control={"type": "ephemeral"})
         messages.append({"role": "assistant", "content": msg.content})
         if msg.stop_reason != "pause_turn":
             break
@@ -184,7 +214,7 @@ def edit(client, art, notes):
             "copied from an outlet; the title matches the story; the story stays within the outlets' and primary source's actual claims; tone is news, not a rant. "
             "verdict: approve if it can run as is, revise if a human should fix something specific, reject if the story should not run.\n\n"
             f"=== NOTES ===\n{notes}\n\n=== DRAFT ===\nTitle: {art['title']}\nExcerpt: {art['excerpt']}\n\n{art['body_html']}")
-    msg = stream_text(client, model=MODEL, max_tokens=4000, messages=[{"role": "user", "content": user}],
+    msg = stream_text(client, model=EDITOR_MODEL, max_tokens=4000, messages=[{"role": "user", "content": user}],
                       output_config={"format": {"type": "json_schema", "schema": EDITOR_SCHEMA}})
     if msg.stop_reason != "end_turn":
         return {"verdict": "revise", "notes": f"editor pass did not complete ({msg.stop_reason})", "issues": []}
@@ -202,7 +232,7 @@ def revise(client, art, verdict, notes=""):
             "border = immigration, ICE, cartels) by the story's subject. Return JSON.\n\n"
             f"=== EDITOR ISSUES ===\n- {issues}\n\n" + (f"=== RESEARCH NOTES ===\n{notes}\n\n" if notes else "") +
             f"=== DRAFT ===\nTitle: {art['title']}\nExcerpt: {art['excerpt']}\n\n{art['body_html']}")
-    msg = stream_text(client, model=MODEL, max_tokens=20000, system=SYSTEM, messages=[{"role": "user", "content": user}],
+    msg = stream_text(client, model=EDITOR_MODEL, max_tokens=20000, system=SYSTEM, messages=[{"role": "user", "content": user}],
                       output_config={"format": {"type": "json_schema", "schema": REVISE_SCHEMA}})
     if msg.stop_reason != "end_turn":
         raise RuntimeError(f"revision did not complete ({msg.stop_reason})")
@@ -235,7 +265,7 @@ def fix_drafts(client, token, status):
         except Exception as exc:  # noqa: BLE001
             traceback.print_exc()
             print(f"  FAILED: {exc.__class__.__name__}: {str(exc)[:300]}")
-    print(f"\ndone: {len(done)} draft(s) fixed")
+    print(f"\ndone: {len(done)} draft(s) fixed; estimated API cost ${USAGE['cost']:.2f}")
 
 
 def attach_image(art, slug, date, no_image):
@@ -317,6 +347,7 @@ def main():
     made = []
     for c in picks:
         print(f"\n== {c['title'][:90]}")
+        USAGE["story"] = 0.0
         try:
             notes = research(client, c)
             if len(notes) < 400:
@@ -326,11 +357,10 @@ def main():
             verdict = edit(client, art, notes)
             print(f"  wrote '{art['title']}' [{art['category']}] editor={verdict['verdict']}")
             revised = []
-            if verdict["verdict"] == "revise":
+            if verdict["verdict"] == "revise":  # one constrained revision (remove / soften / re-attribute), no second editor pass
                 art = revise(client, art, verdict, notes)
                 revised = art.get("changes", [])
-                verdict = edit(client, art, notes)
-                print(f"  revised ({len(revised)} fixes) -> editor={verdict['verdict']}")
+                print(f"  revised ({len(revised)} fixes)")
             slug = re.sub(r"[^a-z0-9-]", "", art["slug"].lower().replace(" ", "-")).strip("-")[:80]
             image_url, credit = attach_image(art, slug, a.date, a.no_image)
             notes_out = f"Editor verdict: {verdict['verdict'].upper()}. {verdict['notes']}"
@@ -344,7 +374,7 @@ def main():
             # --status published: run unless the editor rejects; "revise" notes stay attached for the human editor
             status = a.status if verdict["verdict"] != "reject" else "draft"
             res = publish(art, status, notes_out, image_url, token, {p["slug"] for p in recent})
-            print(f"  posted as {res['status']}: {SITE}{res['admin_url']}")
+            print(f"  posted as {res['status']}: {SITE}{res['admin_url']}  (est. API cost ${USAGE['story']:.2f})")
             used["urls"] += [o["url"] for o in c["outlets"]]
             used["titles"].append(c["title"])
             made.append(res["slug"])
@@ -353,6 +383,8 @@ def main():
             print(f"  FAILED: {exc.__class__.__name__}: {str(exc)[:300]}")
     USED.write_text(json.dumps(used, indent=1))
     print(f"\ndone: {len(made)} story(ies): {', '.join(made)}")
+    print(f"estimated API cost this run: ${USAGE['cost']:.2f} over {USAGE['calls']} calls "
+          f"(models: write={MODEL}, research={RESEARCH_MODEL}, editor={EDITOR_MODEL}; effort={EFFORT})")
 
 
 if __name__ == "__main__":
