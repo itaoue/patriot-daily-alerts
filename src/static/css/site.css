@@ -38,10 +38,8 @@ h1,h2,h3,h4{font-family:var(--serif);line-height:1.15;margin:0;font-weight:700;l
 .topbar__inner{display:flex;align-items:center;justify-content:space-between;gap:16px;height:36px}
 .topbar__date{font-weight:600;letter-spacing:.02em}.topbar__tag{opacity:.8;flex:1;text-align:center}
 .masthead__brand{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:18px 0 14px;gap:12px;transition:padding .2s}
-.logo{display:flex;align-items:center;gap:12px;justify-content:center;grid-column:2}.logo:hover{text-decoration:none}
-.logo__flag{width:54px;height:34px;flex:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.15))}
-.logo__word{font-family:var(--serif);font-weight:800;font-size:clamp(22px,4.2vw,36px);letter-spacing:.03em;text-transform:uppercase;color:var(--navy);line-height:1;white-space:nowrap}
-.logo__word span{color:var(--red)}
+.logo{display:flex;align-items:center;justify-content:center;grid-column:2;min-width:0}.logo:hover{text-decoration:none}
+.logo__img{height:auto;width:min(100%,520px)}
 .search{display:flex;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 14px;grid-column:3;justify-self:end;width:240px}
 .search input{border:0;background:transparent;font:14px var(--sans);width:100%;outline:none;color:var(--ink)}
 .search button{border:0;background:var(--navy);color:#fff;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;cursor:pointer;flex:none}
@@ -53,7 +51,7 @@ h1,h2,h3,h4{font-family:var(--serif);line-height:1.15;margin:0;font-weight:700;l
 .site-nav__inner{display:flex;justify-content:center;gap:4px}
 .site-nav a{padding:12px 16px;font-size:13.5px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);border-bottom:3px solid transparent;margin-bottom:-1px}
 .site-nav a:hover{text-decoration:none;border-color:var(--line-2)}.site-nav a.is-active{border-color:var(--red);color:var(--red)}
-.masthead.is-compact .topbar{display:none}.masthead.is-compact .masthead__brand{padding:8px 0}.masthead.is-compact .logo__flag{width:40px;height:26px}.masthead.is-compact .logo__word{font-size:clamp(18px,3vw,24px)}
+.masthead.is-compact .topbar{display:none}.masthead.is-compact .masthead__brand{padding:8px 0}.masthead.is-compact .logo__img{width:min(100%,360px)}
 
 /* ticker */
 .ticker{background:#fff;border-bottom:1px solid var(--line)}
@@ -167,7 +165,7 @@ h1,h2,h3,h4{font-family:var(--serif);line-height:1.15;margin:0;font-weight:700;l
 .footer{background:#fff;border-top:1px solid var(--line);margin-top:0;padding:48px 0 24px;font-size:14px}
 .footer__grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:36px}
 .footer__about p{color:var(--muted);max-width:44ch;margin:14px 0 0}
-.logo--footer{justify-content:flex-start}.logo--footer .logo__flag{width:40px;height:26px}.logo--footer .logo__word{font-size:20px}
+.logo--footer{justify-content:flex-start}.logo--footer .logo__img{width:280px}
 .footer h4{font-family:var(--sans);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);margin-bottom:12px}
 .footer div>a{display:block;color:#3b3f48;padding:4px 0}
 .footer__bottom{display:flex;justify-content:space-between;gap:16px;margin-top:36px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;flex-wrap:wrap}
@@ -182,8 +180,8 @@ h1,h2,h3,h4{font-family:var(--serif);line-height:1.15;margin:0;font-weight:700;l
   .container{width:min(var(--max),100% - 32px)}
   .topbar__tag{display:none}
   .masthead__brand{grid-template-columns:44px 1fr;padding:10px 0;gap:6px}
-  .logo{justify-content:flex-start;gap:8px}.logo__flag{width:34px;height:22px}.logo__word{font-size:17px;letter-spacing:.02em}
-  .masthead.is-compact .logo__flag{width:30px;height:20px}.masthead.is-compact .logo__word{font-size:16px}
+  .logo{justify-content:flex-start}.logo__img{width:min(100%,260px)}
+  .masthead.is-compact .logo__img{width:min(100%,220px)}
   .nav-toggle{display:flex}.search:not(.search--mobile):not(.search--inline){display:none}
   .site-nav{display:none;position:fixed;inset:var(--nav-top,110px) 0 0;background:#fff;overflow:auto;z-index:49}
   .site-nav.is-open{display:block}

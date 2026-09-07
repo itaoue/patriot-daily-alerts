@@ -8,7 +8,7 @@
 </head>
 <body>
 <header class="ah">
-  <a class="ah__brand" href="{{ url_for('admin.dashboard') }}">🇺🇸 {{ site_name }} <span>Newsroom</span></a>
+  <a class="ah__brand" href="{{ url_for('admin.dashboard') }}"><img src="{{ url_for('static', filename='img/flag.png') }}" alt="" style="height:22px;vertical-align:middle;margin-right:6px">{{ site_name }} <span>Newsroom</span></a>
   <nav>
     <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
     <a href="{{ url_for('admin.posts') }}">Stories</a>
