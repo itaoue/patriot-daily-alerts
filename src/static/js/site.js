@@ -45,6 +45,7 @@
         if (j.ok) {
           form.classList.add('is-done');
           msg.textContent = 'You’re on the list. Watch your inbox tomorrow morning.';
+          if (typeof gtag === 'function') gtag('event', 'newsletter_signup', { source: form.querySelector('[name=source]').value });
         } else {
           msg.textContent = j.error || 'Something went wrong. Please try again.';
         }
