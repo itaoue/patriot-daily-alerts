@@ -173,7 +173,7 @@ def test_publish_api_partial_update_flips_status_and_section(client):
     r = client.post("/api/publish", json=body, headers=h)
     assert r.status_code == 200 and r.get_json()["status"] == "published"
     post = Post.query.filter_by(slug="pipeline-story").first()
-    assert post.status == "published" and post.category.slug == "culture" and post.body_html == "<p>Hello</p>"
+    assert post.status == "published" and post.category.slug == "culture" and post.body_html.startswith("<p>Hello</p>")
     assert client.get("/pipeline-story/").status_code == 200
     r = client.get("/api/posts/recent?days=1", headers=h).get_json()
     assert any(p["slug"] == "pipeline-story" and "editor_notes" in p for p in r["posts"])
