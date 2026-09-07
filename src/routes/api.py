@@ -106,7 +106,7 @@ def recent_posts():
     return jsonify(posts=[
         {"title": p.title, "slug": p.slug, "status": p.status, "category": p.category.slug, "author": p.author,
          "published_at": p.published_at.isoformat(), "sources": p.source_list, "editor_notes": p.editor_notes or "",
-         "url": p.url, "image_url": p.image_url}
+         "url": p.url, "image_url": p.image_url, "excerpt": p.excerpt, "body_html": p.body_html}
         for p in rows
     ])
 

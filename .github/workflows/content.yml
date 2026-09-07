@@ -11,6 +11,9 @@ on:
       status:
         description: "draft or published"
         default: "draft"
+      mode:
+        description: "write (new stories) or fix-drafts (revise existing drafts per editor notes)"
+        default: "write"
 concurrency:
   group: content-pipeline
   cancel-in-progress: false
@@ -37,6 +40,7 @@ jobs:
         run: python tools/radar.py --days 2 --print
       - name: Write stories
         run: |
+          if [ "${{ github.event.inputs.mode }}" = "fix-drafts" ]; then python tools/write_stories.py --fix-drafts --status "${{ github.event.inputs.status }}"; exit 0; fi
           if [ -n "${{ github.event.inputs.count }}" ]; then COUNT="${{ github.event.inputs.count }}"; STATUS="${{ github.event.inputs.status }}";
           elif [ "$(date -u +%H)" -lt 14 ]; then COUNT=3; STATUS=draft; else COUNT=2; STATUS=draft; fi
           python tools/write_stories.py --count "$COUNT" --status "$STATUS"

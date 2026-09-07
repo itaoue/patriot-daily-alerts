@@ -63,6 +63,16 @@ SCHEMA = {
         "image_scene": {"type": "string", "description": "one sentence describing a photorealistic editorial scene for the header image (no text, no logos, no famous people, no faces)"},
     },
 }
+REVISE_SCHEMA = {
+    "type": "object", "additionalProperties": False,
+    "required": ["title", "excerpt", "category", "body_html", "changes"],
+    "properties": {
+        "title": {"type": "string"}, "excerpt": {"type": "string"},
+        "category": {"type": "string", "enum": CATEGORIES},
+        "body_html": {"type": "string"},
+        "changes": {"type": "array", "items": {"type": "string"}, "description": "one line per fix made"},
+    },
+}
 EDITOR_SCHEMA = {
     "type": "object", "additionalProperties": False,
     "required": ["verdict", "notes", "issues"],
@@ -181,6 +191,53 @@ def edit(client, art, notes):
     return json.loads(next(b.text for b in msg.content if b.type == "text"))
 
 
+def revise(client, art, verdict, notes=""):
+    """Apply the editor's issues to the draft. Removes, softens or re-attributes; never adds new facts."""
+    issues = "\n- ".join(verdict.get("issues") or [verdict.get("notes", "")])
+    user = ("Revise this draft to resolve every issue the editor raised. Rules: fix by removing, softening, re-attributing or retitling; "
+            "do not add any fact, quote or detail that is not already in the draft" + (" or the research notes" if notes else "") +
+            "; keep the voice, length and structure; keep HTML to <p>, <h2>, <blockquote>, <strong>, <em>, <a href>. "
+            "Also set the section (politics = Washington, campaigns, Congress, courts, elections; culture = schools, faith, media, entertainment, "
+            "sports, speech, social issues; economy = prices, jobs, energy, taxes, markets, the Fed, trade; world = foreign affairs and wars; "
+            "border = immigration, ICE, cartels) by the story's subject. Return JSON.\n\n"
+            f"=== EDITOR ISSUES ===\n- {issues}\n\n" + (f"=== RESEARCH NOTES ===\n{notes}\n\n" if notes else "") +
+            f"=== DRAFT ===\nTitle: {art['title']}\nExcerpt: {art['excerpt']}\n\n{art['body_html']}")
+    msg = stream_text(client, model=MODEL, max_tokens=20000, system=SYSTEM, messages=[{"role": "user", "content": user}],
+                      output_config={"format": {"type": "json_schema", "schema": REVISE_SCHEMA}})
+    if msg.stop_reason != "end_turn":
+        raise RuntimeError(f"revision did not complete ({msg.stop_reason})")
+    fixed = json.loads(next(b.text for b in msg.content if b.type == "text"))
+    out = dict(art)
+    out.update({k: fixed[k] for k in ("title", "excerpt", "category", "body_html")})
+    out["changes"] = fixed.get("changes", [])
+    return out
+
+
+def fix_drafts(client, token, status):
+    """--fix-drafts: revise every draft on the site according to its stored editor notes, then re-post it."""
+    drafts = [p for p in site_recent(token) if p["status"] == "draft" and p.get("editor_notes")]
+    print(f"{len(drafts)} draft(s) with editor notes")
+    done = []
+    for p in drafts:
+        print(f"\n== {p['title'][:90]}")
+        try:
+            issues = [ln[2:] for ln in p["editor_notes"].splitlines() if ln.startswith("- ")]
+            verdict = {"issues": issues or [p["editor_notes"]], "notes": p["editor_notes"]}
+            art = {"title": p["title"], "excerpt": p["excerpt"], "body_html": p["body_html"], "category": p["category"], "sources": p["sources"]}
+            fixed = revise(client, art, verdict)
+            notes_out = p["editor_notes"] + "\n\nRevised automatically:\n- " + "\n- ".join(fixed["changes"])
+            payload = {"slug": p["slug"], "update": True, "title": fixed["title"], "excerpt": fixed["excerpt"], "category": fixed["category"],
+                       "body_html": fixed["body_html"], "status": status, "editor_notes": notes_out[:5000]}
+            r = requests.post(f"{SITE}/api/publish", json=payload, headers={"Authorization": f"Bearer {token}"}, timeout=60)
+            r.raise_for_status()
+            print(f"  '{fixed['title']}' [{fixed['category']}] -> {r.json()['status']}: {SITE}{p['url']}")
+            done.append(p["slug"])
+        except Exception as exc:  # noqa: BLE001
+            traceback.print_exc()
+            print(f"  FAILED: {exc.__class__.__name__}: {str(exc)[:300]}")
+    print(f"\ndone: {len(done)} draft(s) fixed")
+
+
 def attach_image(art, slug, date, no_image):
     if no_image:
         return "", ""
@@ -234,8 +291,15 @@ def main():
     ap.add_argument("--date", default=dt.date.today().isoformat())
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-image", action="store_true")
+    ap.add_argument("--fix-drafts", action="store_true", help="revise the site's drafts per their editor notes instead of writing new stories")
     a = ap.parse_args()
     token = os.environ.get("PUBLISH_TOKEN", "")
+    if a.fix_drafts:
+        if not token:
+            sys.exit("PUBLISH_TOKEN is not set")
+        import anthropic
+        fix_drafts(anthropic.Anthropic(max_retries=5), token, a.status)
+        return
     radar = pathlib.Path(a.radar) if a.radar else sorted(RADAR.glob("[0-9]*.json"))[-1]
     clusters = json.loads(radar.read_text())["clusters"]
     used = load_used()
@@ -261,11 +325,19 @@ def main():
             art = write(client, c, notes, a.date)
             verdict = edit(client, art, notes)
             print(f"  wrote '{art['title']}' [{art['category']}] editor={verdict['verdict']}")
+            revised = []
+            if verdict["verdict"] == "revise":
+                art = revise(client, art, verdict, notes)
+                revised = art.get("changes", [])
+                verdict = edit(client, art, notes)
+                print(f"  revised ({len(revised)} fixes) -> editor={verdict['verdict']}")
             slug = re.sub(r"[^a-z0-9-]", "", art["slug"].lower().replace(" ", "-")).strip("-")[:80]
             image_url, credit = attach_image(art, slug, a.date, a.no_image)
             notes_out = f"Editor verdict: {verdict['verdict'].upper()}. {verdict['notes']}"
             if verdict.get("issues"):
                 notes_out += "\nIssues:\n- " + "\n- ".join(verdict["issues"])
+            if revised:
+                notes_out += "\nRevised automatically after the first editor pass:\n- " + "\n- ".join(revised)
             if credit:
                 notes_out += f"\n{credit}"
             notes_out += f"\nRadar: rank {c['rank']}, score {c['score']}, outlets: {', '.join(o['name'] for o in c['outlets'])}"
