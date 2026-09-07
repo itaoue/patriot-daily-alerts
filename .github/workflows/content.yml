@@ -52,5 +52,17 @@ jobs:
         run: |
           git config user.name "content-bot"
           git config user.email "news@patriotdailyalerts.com"
+          # another run may have pushed meanwhile: rebuild on top of origin/main and union-merge the dedupe memory
+          cp content/radar/used.json /tmp/used.local.json
+          git fetch origin main
+          git checkout -- content/radar/used.json
+          git checkout -B main origin/main
+          python - <<'PY'
+          import json
+          a = json.load(open("content/radar/used.json")); b = json.load(open("/tmp/used.local.json"))
+          for k in ("urls", "titles"):
+              a[k] = list(dict.fromkeys(a.get(k, []) + b.get(k, [])))
+          json.dump(a, open("content/radar/used.json", "w"), indent=1)
+          PY
           git add src/static/uploads content/radar/used.json
-          git diff --cached --quiet && echo "nothing to commit" || (git commit -m "Content pipeline: images for $(date -u +%F)" && git pull --rebase origin main && git push)
+          git diff --cached --quiet && echo "nothing to commit" || (git commit -m "Content pipeline: images for $(date -u +%F)" && git push origin main)
