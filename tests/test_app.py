@@ -110,3 +110,12 @@ def test_legacy_upload_route_serves_mirrored_images(client, tmp_path):
     finally:
         os.remove(os.path.join(folder, "probe.txt"))
         os.removedirs(folder)
+
+
+def test_article_with_tweet_loads_twitter_widget(client):
+    post = Post.query.filter(Post.body_html.contains("twitter-tweet")).first()
+    assert post is not None
+    r = client.get(f"/{post.slug}/")
+    assert b"platform.twitter.com/widgets.js" in r.data
+    other = Post.query.filter(~Post.body_html.contains("twitter-tweet")).first()
+    assert b"platform.twitter.com/widgets.js" not in client.get(f"/{other.slug}/").data

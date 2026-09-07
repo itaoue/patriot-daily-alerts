@@ -59,3 +59,7 @@
   {% include "partials/_sidebar.html" %}
 </div>
 {% endblock %}
+{% block scripts %}
+{% if 'twitter-tweet' in post.body_html %}<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>{% endif %}
+{% if 'instagram-media' in post.body_html %}<script async src="https://www.instagram.com/embed.js"></script>{% endif %}
+{% endblock %}

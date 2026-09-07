@@ -110,6 +110,8 @@ h1{font-size:32px}h2{font-size:24px}h3{font-size:18px}
 .prose img{margin:20px auto}.prose figure{margin:20px 0}.prose figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
 .prose blockquote{margin:20px 0;padding:10px 20px;border-left:4px solid var(--red);background:#f7f7f7;font-style:italic}
 .prose ul{list-style:square}.prose ul,.prose ol{margin:0 0 20px 40px;padding:0}.prose li{margin-bottom:5px}.prose iframe{max-width:100%}
+/* social embeds: centre the rendered card; keep the blockquote readable until widgets.js runs */
+.prose .twitter-tweet{margin:20px auto}.prose blockquote.twitter-tweet{max-width:550px;font-style:normal}.prose .twitter-tweet-rendered{display:flex;justify-content:center}
 .prose hr{border:0;border-top:1px solid var(--line);margin:30px 0}
 .prose--page{font-size:14px}
 
