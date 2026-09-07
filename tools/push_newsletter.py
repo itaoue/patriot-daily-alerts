@@ -7,7 +7,8 @@ Push a built newsletter issue to BigMailer as a campaign (draft by default).
     python tools/push_newsletter.py 2026-09-08-am --dry-run
     python tools/push_newsletter.py --brands | --lists         # discover ids
 
-Environment: BIGMAILER_API_KEY, BIGMAILER_BRAND_ID, BIGMAILER_LIST_ID, optional BM_FROM_NAME / BM_FROM_EMAIL / BM_REPLY_TO.
+Environment: BIGMAILER_API_KEY, BIGMAILER_BRAND_ID, optional BIGMAILER_LIST_ID (one id or a comma-separated set;
+leave it unset to send to EVERY list in the brand), optional BM_FROM_NAME / BM_FROM_EMAIL / BM_REPLY_TO.
 The HTML uses BigMailer merge tags *|UNSUB|* and the static "View online" URL.
 """
 import argparse
@@ -32,6 +33,12 @@ def headers():
     return {"X-API-Key": need("BIGMAILER_API_KEY"), "accept": "application/json", "content-type": "application/json"}
 
 
+def all_lists(brand):
+    r = requests.get(f"{BM}/brands/{brand}/lists?limit=100", headers=headers(), timeout=30)
+    r.raise_for_status()
+    return r.json().get("data", [])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("campaign", nargs="?", help="issue id like 2026-09-08-am (from dist/newsletters)")
@@ -46,7 +53,7 @@ def main():
         return
     brand = need("BIGMAILER_BRAND_ID")
     if a.lists:
-        for lst in requests.get(f"{BM}/brands/{brand}/lists?limit=100", headers=headers(), timeout=30).json().get("data", []):
+        for lst in all_lists(brand):
             print(f"  {lst['id']}  {lst['name']}  ({lst.get('num_contacts', '?')} contacts)")
         return
     if not a.campaign:
@@ -59,14 +66,23 @@ def main():
     b = requests.get(f"{BM}/brands/{brand}", headers=headers(), timeout=30).json()
     from_name = os.environ.get("BM_FROM_NAME") or b.get("from_name") or "Patriot Daily Alerts"
     from_email = os.environ.get("BM_FROM_EMAIL") or b.get("from_email")
+    env_lists = [x.strip() for x in os.environ.get("BIGMAILER_LIST_ID", "").split(",") if x.strip()]
+    if env_lists:
+        list_ids, list_desc = env_lists, f"{len(env_lists)} list(s) from BIGMAILER_LIST_ID"
+    else:
+        lists = all_lists(brand)
+        if not lists:
+            sys.exit("the brand has no lists")
+        list_ids = [lst["id"] for lst in lists]
+        list_desc = "all lists: " + ", ".join(f"{lst['name']} ({lst.get('num_contacts', '?')})" for lst in lists)
     payload = {
         "name": f"PDA {a.campaign}", "subject": issue["subject"], "preview": issue.get("preheader", ""),
         "from": {"name": from_name, "email": from_email},
         "reply_to": {"name": from_name, "email": os.environ.get("BM_REPLY_TO") or from_email},
-        "html": html, "text": text, "list_ids": [need("BIGMAILER_LIST_ID")],
+        "html": html, "text": text, "list_ids": list_ids,
         "track_opens": True, "track_clicks": True, "ready": bool(a.ready),
     }
-    print(f"brand {b.get('name')} | from {from_name} <{from_email}> | subject '{issue['subject']}' | html {len(html):,} chars | ready={a.ready}")
+    print(f"brand {b.get('name')} | from {from_name} <{from_email}> | {list_desc} | subject '{issue['subject']}' | html {len(html):,} chars | ready={a.ready}")
     if a.dry_run:
         print("dry run: nothing created")
         return
