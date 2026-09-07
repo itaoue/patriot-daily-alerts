@@ -56,9 +56,31 @@ def set_status(**fields) -> None:
     db.session.commit()
 
 
+AUTHOR_RE = re.compile(r'class="fn"[^>]*>([^<]{1,120})<')
+
+
+def author_name(p: dict, cache: dict) -> str:
+    """The site's REST API hides users, so read the byline from the rendered post page (once per author id)."""
+    embedded = (p.get("_embedded", {}).get("author") or [{}])[0]
+    if embedded.get("name"):
+        return embedded["name"][:120]
+    aid = p.get("author")
+    if aid not in cache:
+        name = ""
+        try:
+            r = requests.get(p.get("link", ""), headers=UA, timeout=30)
+            m = AUTHOR_RE.search(r.text) if r.status_code == 200 else None
+            name = html.unescape(m.group(1)).strip() if m else ""
+        except requests.RequestException:
+            pass
+        cache[aid] = name or "Staff"
+    return cache[aid]
+
+
 def import_posts(source: str, max_posts: int, log=print) -> int:
     cats = ensure_categories()
     page, done = 1, 0
+    authors: dict = {}
     while True:
         r = fetch(f"{source}/wp-json/wp/v2/posts", {"per_page": 50, "page": page, "_embed": 1})
         if r is None:
@@ -78,8 +100,7 @@ def import_posts(source: str, max_posts: int, log=print) -> int:
             post.title = html.unescape(p["title"]["rendered"])
             post.excerpt = excerpt or make_excerpt(body)
             post.body_html = body
-            author = (p.get("_embedded", {}).get("author") or [{}])[0].get("name")
-            post.author = (author or "Staff")[:120]
+            post.author = author_name(p, authors)[:120]
             post.image_url = media.get("source_url", "") or ""
             post.category = cats.get(next((s for s in slugs if s in cats and s != "latest-news"), "politics"), cats["politics"])
             post.status = "published" if p.get("status") == "publish" else "draft"
