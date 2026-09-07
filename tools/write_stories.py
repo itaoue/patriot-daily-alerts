@@ -25,6 +25,7 @@ import os
 import pathlib
 import re
 import sys
+import time
 import traceback
 
 import requests
@@ -41,7 +42,9 @@ SITE = os.environ.get("SITE_URL", "https://patriotdailyalerts.com").rstrip("/")
 
 SYSTEM = """You write news stories for Patriot Daily Alerts, a conservative American news site read by patriotic, mostly older Americans who distrust the legacy media. Voice: confident, plain-spoken, concrete, a little wry; the perspective is conservative but the reporting is straight. Every story is ORIGINAL WRITING built from the facts in the research notes. Never copy or closely paraphrase another outlet's sentences; do not reproduce more than two short quotes from any one source; quote public figures only in the exact words the notes give. Never invent facts, numbers, quotes or names. If the notes flag something as unconfirmed, say so in the story. Do not write about private individuals; do not accuse anyone of a crime unless a court or law enforcement has done so. No advice, no calls to action, no "share this", no exclamation points, no cliches ("bombshell", "slams", "destroys"). Attribute reporting naturally in the body, once per outlet ("Newsmax reported", "according to the Washington Examiner") and cite the primary source when there is one (the court order, the agency statement, the post on X).
 
-Format: return the body as clean HTML using only <p>, <h2>, <blockquote>, <strong>, <em>, <a href> tags. Open with a two- or three-paragraph lede that states the news and why it matters; then two to four <h2> sections with specific headings; close with a short paragraph on what happens next. 500 to 800 words. Links in the body only to primary sources and the outlets you attribute. No "Sources" section in the body (sources are a separate field). Title style, like the site's own: specific, active, one hook, no colon-and-cliche, e.g. "Vance Walks Into the Toughest Room in His Party", "One Barcode Fails, and Ten Thousand Ballots Go Back", "Congress Is Back, and the Clock Is Already Short". Excerpt: one or two sentences that stand alone in an email."""
+Format: return the body as clean HTML using only <p>, <h2>, <blockquote>, <strong>, <em>, <a href> tags. Open with a two- or three-paragraph lede that states the news and why it matters; then two to four <h2> sections with specific headings; close with a short paragraph on what happens next. 500 to 800 words. Links in the body only to primary sources and the outlets you attribute. No "Sources" section in the body (sources are a separate field). Title style, like the site's own: specific, active, one hook, no colon-and-cliche, e.g. "Vance Walks Into the Toughest Room in His Party", "One Barcode Fails, and Ten Thousand Ballots Go Back", "Congress Is Back, and the Clock Is Already Short". Excerpt: one or two sentences that stand alone in an email.
+
+Sections: politics = Washington, campaigns, Congress, the White House, courts and elections; culture = schools, faith, media, entertainment, sports, speech and social issues; economy = prices, jobs, energy, taxes, markets, the Fed, trade; world = foreign affairs, wars, allies and adversaries; border = immigration, the border, ICE, cartels, crime tied to them. Pick the section by the story's subject, not by who is speaking (a Treasury secretary talking about oil prices is economy; a mayor and a 9/11 ceremony is politics; a police charity dropping a singer is culture)."""
 
 SCHEMA = {
     "type": "object", "additionalProperties": False,
@@ -101,9 +104,25 @@ def choose(clusters, count, used, site_recent):
 
 
 def stream_text(client, **kwargs):
-    with client.messages.stream(**kwargs) as stream:
-        msg = stream.get_final_message()
-    return msg
+    """One streamed request; retries overloaded / 5xx / connection errors a few times on top of the SDK's own retries."""
+    import anthropic
+
+    for attempt in range(4):
+        try:
+            with client.messages.stream(**kwargs) as stream:
+                return stream.get_final_message()
+        except (anthropic.APIConnectionError, anthropic.RateLimitError, anthropic.InternalServerError) as exc:
+            wait = 30 * (attempt + 1)
+            print(f"  transient API error ({exc.__class__.__name__}); retrying in {wait}s")
+            time.sleep(wait)
+        except anthropic.APIStatusError as exc:
+            if exc.status_code >= 500 or "overloaded" in str(exc).lower():
+                wait = 30 * (attempt + 1)
+                print(f"  API {exc.status_code}; retrying in {wait}s")
+                time.sleep(wait)
+            else:
+                raise
+    raise RuntimeError("API kept failing after retries")
 
 
 def research(client, c):
@@ -230,7 +249,7 @@ def main():
     if not token:
         sys.exit("PUBLISH_TOKEN is not set")
     import anthropic
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(max_retries=5)
     made = []
     for c in picks:
         print(f"\n== {c['title'][:90]}")
@@ -250,7 +269,8 @@ def main():
             if credit:
                 notes_out += f"\n{credit}"
             notes_out += f"\nRadar: rank {c['rank']}, score {c['score']}, outlets: {', '.join(o['name'] for o in c['outlets'])}"
-            status = a.status if verdict["verdict"] == "approve" else "draft"
+            # --status published: run unless the editor rejects; "revise" notes stay attached for the human editor
+            status = a.status if verdict["verdict"] != "reject" else "draft"
             res = publish(art, status, notes_out, image_url, token, {p["slug"] for p in recent})
             print(f"  posted as {res['status']}: {SITE}{res['admin_url']}")
             used["urls"] += [o["url"] for o in c["outlets"]]

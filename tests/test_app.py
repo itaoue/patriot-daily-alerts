@@ -162,3 +162,37 @@ def test_publish_api_requires_token_and_creates_draft(client):
     r = client.get("/api/posts/recent?days=3", headers={"Authorization": "Bearer t0k3n"})
     assert any(p["slug"] == "pipeline-story" for p in r.get_json()["posts"])
     assert client.get("/api/posts/recent").status_code == 401
+
+
+def test_publish_api_partial_update_flips_status_and_section(client):
+    from flask import current_app
+
+    current_app.config["PUBLISH_TOKEN"] = "t0k3n"
+    h = {"Authorization": "Bearer t0k3n"}
+    body = {"slug": "pipeline-story", "update": True, "status": "published", "category": "culture"}
+    r = client.post("/api/publish", json=body, headers=h)
+    assert r.status_code == 200 and r.get_json()["status"] == "published"
+    post = Post.query.filter_by(slug="pipeline-story").first()
+    assert post.status == "published" and post.category.slug == "culture" and post.body_html == "<p>Hello</p>"
+    assert client.get("/pipeline-story/").status_code == 200
+    r = client.get("/api/posts/recent?days=1", headers=h).get_json()
+    assert any(p["slug"] == "pipeline-story" and "editor_notes" in p for p in r["posts"])
+
+
+def test_categories_exist_even_without_auto_seed():
+    import os
+
+    os.environ["AUTO_SEED"] = "0"
+    try:
+        from src.config import Config
+        from src.models import Category
+
+        class NoSeed(Config):
+            AUTO_SEED = False
+            SQLALCHEMY_DATABASE_URI = "sqlite://"
+
+        app = create_app(NoSeed)
+        with app.app_context():
+            assert Category.query.count() == 5 and Post.query.count() == 0
+    finally:
+        os.environ.pop("AUTO_SEED", None)

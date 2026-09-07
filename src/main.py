@@ -74,9 +74,11 @@ def create_app(config_object=Config) -> Flask:
     with app.app_context():
         db.create_all()
         migrate_columns()
-        if app.config["AUTO_SEED"]:
-            from src.seed import seed_if_empty
+        from src.seed import ensure_categories, seed_if_empty
 
+        ensure_categories()
+        db.session.commit()
+        if app.config["AUTO_SEED"]:
             seed_if_empty()
 
     @app.cli.command("seed")

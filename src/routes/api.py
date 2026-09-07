@@ -104,40 +104,52 @@ def recent_posts():
     since = utcnow() - timedelta(days=days)
     rows = Post.query.filter(Post.published_at >= since).order_by(Post.published_at.desc()).all()
     return jsonify(posts=[
-        {"title": p.title, "slug": p.slug, "status": p.status, "category": p.category.slug,
-         "published_at": p.published_at.isoformat(), "sources": p.source_list}
+        {"title": p.title, "slug": p.slug, "status": p.status, "category": p.category.slug, "author": p.author,
+         "published_at": p.published_at.isoformat(), "sources": p.source_list, "editor_notes": p.editor_notes or "",
+         "url": p.url, "image_url": p.image_url}
         for p in rows
     ])
 
 
 @api_bp.route("/publish", methods=["POST"])
 def publish():
-    """Create (or, with update=true, replace) a story. Defaults to a draft for human review."""
+    """Create a story (defaults to a draft for human review). With update=true and an existing slug,
+    only the fields present in the request are changed, so status/category can be flipped alone."""
     if not _pipeline_authorized():
         return jsonify(error="unauthorized"), 401
     data = request.get_json(silent=True) or {}
-    title = (data.get("title") or "").strip()[:300]
-    body = sanitize_html(data.get("body_html") or "")
-    if not title or not body:
-        return jsonify(ok=False, error="title and body_html are required"), 400
-    slug = slugify(data.get("slug") or title)
-    existing = Post.query.filter_by(slug=slug).first()
+    slug = slugify(data.get("slug") or data.get("title") or "")
+    existing = Post.query.filter_by(slug=slug).first() if slug else None
     if existing and not data.get("update"):
         return jsonify(ok=False, error="slug already exists", id=existing.id, slug=slug), 409
-    cat = Category.query.filter_by(slug=(data.get("category") or "politics")).first() or Category.query.filter_by(slug="politics").first()
+    if not existing and not ((data.get("title") or "").strip() and (data.get("body_html") or "").strip()):
+        return jsonify(ok=False, error="title and body_html are required"), 400
     post = existing or Post(slug=slug)
-    post.title = title
-    post.body_html = body
-    post.excerpt = (data.get("excerpt") or "").strip()[:500] or make_excerpt(body)
-    post.category = cat
-    post.author = (data.get("author") or "Staff").strip()[:120]
-    post.image_url = (data.get("image_url") or "").strip()[:600]
-    post.status = "published" if data.get("status") == "published" else "draft"
-    post.editor_notes = (data.get("editor_notes") or "")[:5000]
-    post.sources = json.dumps([
-        {"label": str(s.get("label", ""))[:200], "url": str(s.get("url", ""))[:600]}
-        for s in (data.get("sources") or []) if isinstance(s, dict) and s.get("url")
-    ][:10])
+    if "title" in data:
+        post.title = (data["title"] or "").strip()[:300]
+    if "body_html" in data:
+        post.body_html = sanitize_html(data["body_html"] or "")
+    if "excerpt" in data or not post.excerpt:
+        post.excerpt = (data.get("excerpt") or "").strip()[:500] or make_excerpt(post.body_html)
+    if "category" in data or not post.category_id:
+        post.category = (Category.query.filter_by(slug=(data.get("category") or "politics")).first()
+                         or Category.query.filter_by(slug="politics").first())
+    if "author" in data or not post.author:
+        post.author = (data.get("author") or "Staff").strip()[:120]
+    if "image_url" in data:
+        post.image_url = (data["image_url"] or "").strip()[:600]
+    if "status" in data or not existing:
+        was_published = existing is not None and existing.status == "published"
+        post.status = "published" if data.get("status") == "published" else "draft"
+        if post.status == "published" and not was_published and "published_at" not in data:
+            post.published_at = utcnow()  # approving a draft stamps it with the publish time
+    if "editor_notes" in data:
+        post.editor_notes = (data["editor_notes"] or "")[:5000]
+    if "sources" in data:
+        post.sources = json.dumps([
+            {"label": str(s.get("label", ""))[:200], "url": str(s.get("url", ""))[:600]}
+            for s in (data.get("sources") or []) if isinstance(s, dict) and s.get("url")
+        ][:10])
     when = data.get("published_at")
     if when:
         try:

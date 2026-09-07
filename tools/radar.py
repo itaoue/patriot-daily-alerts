@@ -233,7 +233,7 @@ def already_written(site, token, days=14):
     titles = []
     if site:
         try:
-            req = urllib.request.Request(f"{site.rstrip('/')}/api/posts/recent?days={days}", headers={"Authorization": f"Bearer {token}"})
+            req = urllib.request.Request(f"{site.rstrip('/')}/api/posts/recent?days={days}", headers={**UA, "Authorization": f"Bearer {token}"})
             with urllib.request.urlopen(req, timeout=20) as r:
                 titles = [p["title"] for p in json.load(r)["posts"]]
         except (urllib.error.URLError, OSError, ValueError, KeyError) as exc:
