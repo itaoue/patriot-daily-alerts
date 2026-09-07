@@ -196,3 +196,13 @@ def test_categories_exist_even_without_auto_seed():
             assert Category.query.count() == 5 and Post.query.count() == 0
     finally:
         os.environ.pop("AUTO_SEED", None)
+
+
+def test_publish_api_can_delete(client):
+    from flask import current_app
+
+    current_app.config["PUBLISH_TOKEN"] = "t0k3n"
+    h = {"Authorization": "Bearer t0k3n"}
+    assert client.post("/api/publish", json={"slug": "pipeline-story", "delete": True}, headers=h).get_json()["deleted"] == "pipeline-story"
+    assert Post.query.filter_by(slug="pipeline-story").first() is None
+    assert client.post("/api/publish", json={"slug": "pipeline-story", "delete": True}, headers=h).status_code == 404

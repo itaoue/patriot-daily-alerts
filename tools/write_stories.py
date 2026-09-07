@@ -101,10 +101,29 @@ def norm(t):
     return " ".join(sorted(w for w in re.findall(r"[a-z0-9]+", t.lower()) if len(w) > 3))
 
 
+RADAR_MARK = "Radar headline: "
+
+
+def radar_headlines(site_recent):
+    """Original radar headlines of stories already on the site (stored in editor notes), for dedupe."""
+    out = set()
+    for p in site_recent:
+        for ln in (p.get("editor_notes") or "").splitlines():
+            if ln.startswith(RADAR_MARK):
+                out.add(norm(ln[len(RADAR_MARK):]))
+    return out
+
+
+def overlap(a, b):
+    a, b = set(a.split()), set(b.split())
+    return len(a & b) / max(1, min(len(a), len(b)))
+
+
 def choose(clusters, count, used, site_recent):
-    seen = {norm(t) for t in used["titles"]} | {norm(p["title"]) for p in site_recent}
-    used_urls = set(used["urls"])
+    seen = {norm(t) for t in used["titles"]} | {norm(p["title"]) for p in site_recent} | radar_headlines(site_recent)
+    used_urls = set(used["urls"]) | {s.get("url") for p in site_recent for s in (p.get("sources") or [])}
     fresh = [c for c in clusters if not c["written"] and norm(c["title"]) not in seen
+             and not any(overlap(norm(c["title"]), t) >= 0.6 for t in seen if t)
              and not any(o["url"] in used_urls for o in c["outlets"])]
     picks, cats = [], set()
     for c in fresh:  # radar order = best first; spread across sections
@@ -371,6 +390,7 @@ def main():
             if credit:
                 notes_out += f"\n{credit}"
             notes_out += f"\nRadar: rank {c['rank']}, score {c['score']}, outlets: {', '.join(o['name'] for o in c['outlets'])}"
+            notes_out += f"\n{RADAR_MARK}{c['title']}"
             # --status published: run unless the editor rejects; "revise" notes stay attached for the human editor
             status = a.status if verdict["verdict"] != "reject" else "draft"
             res = publish(art, status, notes_out, image_url, token, {p["slug"] for p in recent})

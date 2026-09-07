@@ -120,6 +120,12 @@ def publish():
     data = request.get_json(silent=True) or {}
     slug = slugify(data.get("slug") or data.get("title") or "")
     existing = Post.query.filter_by(slug=slug).first() if slug else None
+    if data.get("delete"):
+        if not existing:
+            return jsonify(ok=False, error="no such slug"), 404
+        db.session.delete(existing)
+        db.session.commit()
+        return jsonify(ok=True, deleted=slug)
     if existing and not data.get("update"):
         return jsonify(ok=False, error="slug already exists", id=existing.id, slug=slug), 409
     if not existing and not ((data.get("title") or "").strip() and (data.get("body_html") or "").strip()):
