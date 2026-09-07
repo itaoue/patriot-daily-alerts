@@ -78,6 +78,8 @@ def import_posts(source: str, max_posts: int, log=print) -> int:
             post.title = html.unescape(p["title"]["rendered"])
             post.excerpt = excerpt or make_excerpt(body)
             post.body_html = body
+            author = (p.get("_embedded", {}).get("author") or [{}])[0].get("name")
+            post.author = (author or "Staff")[:120]
             post.image_url = media.get("source_url", "") or ""
             post.category = cats.get(next((s for s in slugs if s in cats and s != "latest-news"), "politics"), cats["politics"])
             post.status = "published" if p.get("status") == "publish" else "draft"

@@ -2,15 +2,15 @@
 {% block title %}{{ title }} — {{ site_name }}{% endblock %}
 {% block description %}{{ description }}{% endblock %}
 {% block content %}
-<div class="layout">
-  <section class="main-col">
+<div class="mh-row">
+  <section class="mh-content">
     <header class="archive-head">
       <h1>{{ title }}</h1>
       {% if description %}<p>{{ description }}</p>{% endif %}
       {% if search_term is defined %}
       <form class="search search--inline" action="{{ url_for('public.search') }}" role="search">
         <input type="search" name="q" value="{{ search_term }}" placeholder="Search stories…" aria-label="Search">
-        <button class="btn btn--navy" type="submit">Search</button>
+        <button class="btn" type="submit">Search</button>
       </form>
       {% endif %}
     </header>

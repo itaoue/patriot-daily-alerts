@@ -26,20 +26,25 @@ def most_read(limit=5, exclude_id=None):
     return rows
 
 
+@public_bp.app_context_processor
+def inject_sidebar_posts():
+    if request.path.startswith(("/static/", "/api/", "/admin/")):
+        return {}
+    recent = published_posts().order_by(Post.published_at.desc()).limit(5).all()
+    return {"ticker_posts": recent, "recent_posts": recent}
+
+
 @public_bp.route("/")
 def home():
     q = published_posts().order_by(Post.published_at.desc())
     lead = q.filter(Post.featured.is_(True)).first() or q.first()
     if not lead:
-        return render_template("index.html", lead=None, top=[], latest=[], most_read=[], ticker=[], page=1, has_more=False)
+        return render_template("index.html", lead=None, top=[], latest=[], most_read=[], has_more=False)
     top = q.filter(Post.id != lead.id).limit(4).all()
     exclude = [lead.id] + [p.id for p in top]
     latest = q.filter(Post.id.notin_(exclude)).limit(current_app.config["POSTS_PER_PAGE"]).all()
     has_more = q.filter(Post.id.notin_(exclude)).count() > len(latest)
-    ticker = q.limit(6).all()
-    return render_template(
-        "index.html", lead=lead, top=top, latest=latest, most_read=most_read(5), ticker=ticker, has_more=has_more
-    )
+    return render_template("index.html", lead=lead, top=top, latest=latest, most_read=most_read(5), has_more=has_more)
 
 
 @public_bp.route("/latest/")

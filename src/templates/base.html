@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=3">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=4">
   {% block head %}{% endblock %}
   {% if ga_id %}
   <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_id }}"></script>
@@ -30,96 +30,88 @@
 <body class="{% block body_class %}{% endblock %}">
 <a class="skip-link" href="#main">Skip to content</a>
 
-<header class="masthead" id="masthead">
-  <div class="topbar">
-    <div class="container topbar__inner">
-      <span class="topbar__date" id="todayDate"></span>
-      <span class="topbar__tag">{{ site_tagline }}</span>
-      <a class="btn btn--sm btn--red" href="#newsletter">Get the daily alert</a>
+<div class="mh-container">
+  <header class="mh-header">
+    <div class="mh-site-logo">
+      <a href="/" aria-label="{{ site_name }} home">{% include "partials/_logo.html" %}</a>
     </div>
-  </div>
 
-  <div class="container masthead__brand">
-    <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="siteNav">
-      <span></span><span></span><span></span>
-    </button>
-    <a class="logo" href="/" aria-label="{{ site_name }} home">
-      {% include "partials/_logo.html" %}
-    </a>
-    <form class="search" action="{{ url_for('public.search') }}" role="search">
-      <input type="search" name="q" placeholder="Search stories…" aria-label="Search" value="{{ search_term or '' }}">
-      <button type="submit" aria-label="Search">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+    <nav class="mh-main-nav" aria-label="Primary">
+      <button class="mh-nav-toggle" id="navToggle" aria-expanded="false" aria-controls="siteNav">
+        <span class="mh-nav-toggle__bars"><span></span><span></span><span></span></span> Menu
       </button>
-    </form>
-  </div>
+      <ul id="siteNav">
+        <li class="{{ 'is-active' if current_path == '/' }}"><a href="/">Home</a></li>
+        <li class="{{ 'is-active' if current_path.startswith('/latest') }}"><a href="{{ url_for('public.latest') }}">Latest News</a></li>
+        {% for c in nav_categories %}
+        <li class="{{ 'is-active' if current_path == '/category/' ~ c.slug ~ '/' }}"><a href="{{ url_for('public.category', slug=c.slug) }}">{{ c.name }}</a></li>
+        {% endfor %}
+        <li class="{{ 'is-active' if current_path == '/about-us/' }}"><a href="/about-us/">About Us</a></li>
+        <li class="{{ 'is-active' if current_path == '/contact-us/' }}"><a href="/contact-us/">Contact Us</a></li>
+        <li class="{{ 'is-active' if current_path == '/remove-from-our-email-list/' }}"><a href="/remove-from-our-email-list/">Remove From Our Email List</a></li>
+      </ul>
+    </nav>
 
-  <nav class="site-nav" id="siteNav" aria-label="Primary">
-    <div class="container site-nav__inner">
-      <a href="/" class="{{ 'is-active' if current_path == '/' }}">Home</a>
-      <a href="{{ url_for('public.latest') }}" class="{{ 'is-active' if current_path.startswith('/latest') }}">Latest</a>
-      {% for c in nav_categories %}
-      <a href="{{ url_for('public.category', slug=c.slug) }}" class="{{ 'is-active' if current_path == '/category/' ~ c.slug ~ '/' }}">{{ c.name }}</a>
-      {% endfor %}
-      <a href="/about-us/" class="{{ 'is-active' if current_path == '/about-us/' }}">About</a>
-      <a href="/contact-us/" class="{{ 'is-active' if current_path == '/contact-us/' }}">Contact</a>
-      <form class="search search--mobile" action="{{ url_for('public.search') }}" role="search">
-        <input type="search" name="q" placeholder="Search stories…" aria-label="Search">
+    <div class="mh-ticker">
+      <a class="mh-ticker-title" href="{{ url_for('public.latest') }}">News Ticker <span aria-hidden="true">›</span></a>
+      <div class="mh-ticker-items" data-ticker>
+        {% for p in ticker_posts %}
+        <div class="mh-ticker-item{{ ' is-visible' if loop.first }}">
+          <span class="mh-ticker-date">[ {{ p.published_at|date }} ]</span>
+          <a href="{{ p.url }}">{{ p.title }}</a>
+          <span class="mh-ticker-sep" aria-hidden="true">▸</span>
+          <a class="mh-ticker-cat" href="{{ url_for('public.category', slug=p.category.slug) }}">{{ p.category.name }}</a>
+        </div>
+        {% endfor %}
+      </div>
+      <form class="mh-search" action="{{ url_for('public.search') }}" role="search">
+        <input type="search" name="q" placeholder="SEARCH …" aria-label="Search" value="{{ search_term or '' }}">
+        <button type="submit" aria-label="Search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+        </button>
       </form>
     </div>
-  </nav>
-</header>
+  </header>
 
-{% block ticker %}{% endblock %}
+  <main id="main" class="mh-wrapper">
+    {% block content %}{% endblock %}
+  </main>
 
-<main id="main" class="container">
-  {% block content %}{% endblock %}
-</main>
+  <footer class="mh-footer">
+    <div class="mh-footer-widgets">
+      <div class="mh-footer-widget">
+        <h4 class="mh-widget-title mh-footer-widget-title">About {{ site_name }}</h4>
+        <p>In the Information Age, the best weapon is better information. {{ site_name }} exists to better inform the Americans who care about their country.</p>
+      </div>
+      <div class="mh-footer-widget">
+        <h4 class="mh-widget-title mh-footer-widget-title">Sections</h4>
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="{{ url_for('public.latest') }}">Latest News</a></li>
+          {% for c in nav_categories %}<li><a href="{{ url_for('public.category', slug=c.slug) }}">{{ c.name }}</a></li>{% endfor %}
+          <li><a href="{{ url_for('public.feed') }}">RSS Feed</a></li>
+        </ul>
+      </div>
+      <div class="mh-footer-widget" id="newsletter">
+        <h4 class="mh-widget-title mh-footer-widget-title">Get the latest news from a conservative perspective</h4>
+        {% with source='footer' %}{% include "partials/_subscribe_form.html" %}{% endwith %}
+      </div>
+    </div>
+    <div class="mh-copyright-wrap">
+      <ul class="mh-footer-nav">
+        <li><a href="/about-us/">About Us</a></li>
+        <li><a href="/terms-of-service/">Terms of Service</a></li>
+        <li><a href="/privacy-policy/">Privacy Policy</a></li>
+        <li><a href="/report-spam/">Report Spam</a></li>
+        <li><a href="/contact-us/">Contact Us</a></li>
+        <li><a href="/remove-from-our-email-list/">Remove From Our Email List</a></li>
+      </ul>
+      <p class="mh-copyright">© <span id="year"></span> | <a href="/">patriotdailyalerts.com</a></p>
+    </div>
+  </footer>
+</div>
 
-<section class="newsletter-band" id="newsletter">
-  <div class="container newsletter-band__inner">
-    <div>
-      <p class="kicker kicker--light">Free daily email</p>
-      <h2>Get the alerts the media won’t send you.</h2>
-      <p>One email a day. The stories that matter, from a conservative perspective. Unsubscribe any time.</p>
-    </div>
-    {% include "partials/_subscribe_form.html" %}
-  </div>
-</section>
-
-<footer class="footer">
-  <div class="container footer__grid">
-    <div class="footer__about">
-      <a class="logo logo--footer" href="/">{% include "partials/_logo.html" %}</a>
-      <p>In the Information Age, the best weapon is better information. {{ site_name }} exists to better inform the Americans who care about their country.</p>
-    </div>
-    <div>
-      <h4>Sections</h4>
-      <a href="/">Home</a>
-      <a href="{{ url_for('public.latest') }}">Latest</a>
-      {% for c in nav_categories %}<a href="{{ url_for('public.category', slug=c.slug) }}">{{ c.name }}</a>{% endfor %}
-      <a href="{{ url_for('public.feed') }}">RSS feed</a>
-    </div>
-    <div>
-      <h4>Company</h4>
-      <a href="/about-us/">About Us</a>
-      <a href="/contact-us/">Contact Us</a>
-      <a href="/report-spam/">Report Spam</a>
-      <a href="/remove-from-our-email-list/">Remove From Our Email List</a>
-    </div>
-    <div>
-      <h4>Legal</h4>
-      <a href="/terms-of-service/">Terms of Service</a>
-      <a href="/privacy-policy/">Privacy Policy</a>
-    </div>
-  </div>
-  <div class="container footer__bottom">
-    <span>© <span id="year"></span> {{ site_name }} · patriotdailyalerts.com</span>
-    <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
-  </div>
-</footer>
-
-<script src="{{ url_for('static', filename='js/site.js') }}?v=2" defer></script>
+<script src="{{ url_for('static', filename='js/site.js') }}?v=4" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

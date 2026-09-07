@@ -9,7 +9,7 @@
   <p>Enter the address you want removed. You can also click the unsubscribe link at the bottom of any email we send, or write to <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
   <form class="form card-box" action="{{ url_for('api.unsubscribe') }}" method="post">
     <label>Email <input type="email" name="email" value="{{ email }}" required></label>
-    <button class="btn btn--navy" type="submit">Unsubscribe</button>
+    <button class="btn" type="submit">Unsubscribe</button>
   </form>
   {% endif %}
 </article>

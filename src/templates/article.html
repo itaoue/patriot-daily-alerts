@@ -10,47 +10,52 @@
 {% endblock %}
 {% block body_class %}is-article{% endblock %}
 {% block content %}
-<div class="progress" aria-hidden="true"><div id="readProgress"></div></div>
-<article class="article">
-  <header class="article__head">
-    <a class="kicker" href="{{ url_for('public.category', slug=post.category.slug) }}">{{ post.category.name }}</a>
-    <h1 class="article__title">{{ post.title }}</h1>
-    {% if post.excerpt %}<p class="article__dek">{{ post.excerpt }}</p>{% endif %}
-    <div class="article__byline">
-      <div class="meta meta--lg"><span>By <strong>{{ post.author }}</strong></span><span>·</span><time datetime="{{ post.published_at.isoformat() }}">{{ post.published_at|datetime }}</time><span>·</span><span>{{ post.reading_minutes }} min read</span></div>
-      <div class="share" data-share data-title="{{ post.title }}">
-        <a href="https://twitter.com/intent/tweet?url={{ (site_url ~ post.url)|urlencode }}&text={{ post.title|urlencode }}" target="_blank" rel="noopener" aria-label="Share on X">X</a>
-        <a href="https://www.facebook.com/sharer/sharer.php?u={{ (site_url ~ post.url)|urlencode }}" target="_blank" rel="noopener" aria-label="Share on Facebook">f</a>
-        <a href="mailto:?subject={{ post.title|urlencode }}&body={{ (site_url ~ post.url)|urlencode }}" aria-label="Share by email">✉</a>
-        <button type="button" data-copy aria-label="Copy link">🔗</button>
+<div class="mh-row">
+  <article class="mh-content mh-single">
+    <nav class="mh-breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a> <span aria-hidden="true">›</span>
+      <a href="{{ url_for('public.category', slug=post.category.slug) }}">{{ post.category.name }}</a> <span aria-hidden="true">›</span>
+      <span>{{ post.title }}</span>
+    </nav>
+    <header class="mh-single-header">
+      <h1 class="entry-title">{{ post.title }}</h1>
+      <div class="mh-meta">
+        <span class="mh-meta-date"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 4.2V8l2.6 1.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><time datetime="{{ post.published_at.isoformat() }}">{{ post.published_at|date }}</time></span>
+        <span class="mh-meta-author"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.2" r="3.2" fill="currentColor"/><path d="M2 15c0-3.4 2.7-5.4 6-5.4s6 2 6 5.4z" fill="currentColor"/></svg>{{ post.author }}</span>
+        <span class="mh-meta-cats"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 3.5h4.2l1.4 1.6h7.4v7.9H1.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><a href="{{ url_for('public.category', slug=post.category.slug) }}">{{ post.category.name }}</a></span>
+        <span class="mh-meta-read">{{ post.reading_minutes }} min read</span>
       </div>
-    </div>
-  </header>
-  {% if post.image_url %}
-  <figure class="article__hero"><img src="{{ post.image_url }}" alt="" fetchpriority="high" decoding="async"></figure>
-  {% endif %}
-  <div class="layout layout--article">
-    <div class="prose">
+    </header>
+    {% if post.image_url %}
+    <figure class="entry-thumbnail"><img src="{{ post.image_url }}" alt="" fetchpriority="high" decoding="async"></figure>
+    {% endif %}
+    <div class="entry-content prose">
       {{ post.body_html|safe }}
-      <div class="inline-signup">
-        <p class="kicker">Don’t miss the next one</p>
-        <h3>Get {{ site_name }} in your inbox every morning.</h3>
-        {% with source='article' %}{% include "partials/_subscribe_form.html" %}{% endwith %}
-      </div>
-      <nav class="prevnext" aria-label="More stories">
-        {% if next_post %}<a href="{{ next_post.url }}"><small>Newer</small>{{ next_post.title }}</a>{% else %}<span></span>{% endif %}
-        {% if prev_post %}<a class="right" href="{{ prev_post.url }}"><small>Older</small>{{ prev_post.title }}</a>{% endif %}
-      </nav>
     </div>
-    {% include "partials/_sidebar.html" %}
-  </div>
-</article>
-{% if related %}
-<section class="related">
-  <div class="section-head"><h2 class="section-title">More in {{ post.category.name }}</h2><a class="section-more" href="{{ url_for('public.category', slug=post.category.slug) }}">See all →</a></div>
-  <div class="grid grid--4">
-    {% for p in related %}{% with post=p, variant='grid' %}{% include "partials/_card.html" %}{% endwith %}{% endfor %}
-  </div>
-</section>
-{% endif %}
+    <div class="mh-share" data-share data-title="{{ post.title }}">
+      <span class="mh-share__label">Share</span>
+      <a href="https://twitter.com/intent/tweet?url={{ (site_url ~ post.url)|urlencode }}&text={{ post.title|urlencode }}" target="_blank" rel="noopener" aria-label="Share on X">X</a>
+      <a href="https://www.facebook.com/sharer/sharer.php?u={{ (site_url ~ post.url)|urlencode }}" target="_blank" rel="noopener" aria-label="Share on Facebook">f</a>
+      <a href="mailto:?subject={{ post.title|urlencode }}&body={{ (site_url ~ post.url)|urlencode }}" aria-label="Share by email">✉</a>
+      <button type="button" data-copy aria-label="Copy link">🔗</button>
+    </div>
+    <div class="inline-signup">
+      <p class="siderbar-form__label">Get {{ site_name }} in your inbox every morning:</p>
+      {% with source='article' %}{% include "partials/_subscribe_form.html" %}{% endwith %}
+    </div>
+    <nav class="mh-post-nav" aria-label="More stories">
+      <div class="mh-post-nav-prev">{% if prev_post %}<span>‹ Previous</span><p><a href="{{ prev_post.url }}">{{ prev_post.title }}</a></p>{% endif %}</div>
+      <div class="mh-post-nav-next">{% if next_post %}<span>Next ›</span><p><a href="{{ next_post.url }}">{{ next_post.title }}</a></p>{% endif %}</div>
+    </nav>
+    {% if related %}
+    <section class="mh-related">
+      <h2 class="mh-widget-title">More in {{ post.category.name }}</h2>
+      <div class="grid grid--2">
+        {% for p in related %}{% with post=p, variant='grid' %}{% include "partials/_card.html" %}{% endwith %}{% endfor %}
+      </div>
+    </section>
+    {% endif %}
+  </article>
+  {% include "partials/_sidebar.html" %}
+</div>
 {% endblock %}

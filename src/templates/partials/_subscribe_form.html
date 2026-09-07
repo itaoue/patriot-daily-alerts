@@ -2,8 +2,7 @@
   <input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
   <input type="hidden" name="source" value="{{ source or 'site' }}">
   <label class="sr-only" for="sub-email-{{ source or 'site' }}">Email address</label>
-  <input id="sub-email-{{ source or 'site' }}" type="email" name="email" placeholder="you@example.com" required>
-  <button class="btn btn--red" type="submit">Subscribe</button>
-  <p class="subscribe-form__note">By subscribing you agree to our <a href="/privacy-policy/">Privacy Policy</a>.</p>
+  <input id="sub-email-{{ source or 'site' }}" type="email" name="email" placeholder="Email Address" required>
+  <button class="subscribe-form__btn" type="submit">Subscribe</button>
   <p class="subscribe-form__msg" role="status" aria-live="polite"></p>
 </form>

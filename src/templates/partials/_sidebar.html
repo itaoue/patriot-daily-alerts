@@ -1,23 +1,27 @@
-<aside class="sidebar">
+<aside class="mh-sidebar">
+  {% if recent_posts %}
+  <section class="mh-widget widget_recent_entries">
+    <h2 class="mh-widget-title">Recent Posts</h2>
+    <ul>
+      {% for p in recent_posts %}<li><a href="{{ p.url }}">{{ p.title }}</a></li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+  <section class="mh-widget">
+    <h2 class="mh-widget-title">Stay Connected</h2>
+    <div class="siderbar-form">
+      <p class="siderbar-form__label">Get your Real American news:</p>
+      {% with source='sidebar' %}{% include "partials/_subscribe_form.html" %}{% endwith %}
+    </div>
+  </section>
   {% if most_read %}
-  <section class="widget">
-    <h2 class="widget__title">Most read</h2>
+  <section class="mh-widget">
+    <h2 class="mh-widget-title">Most Read</h2>
     <ol class="ranked">
       {% for p in most_read %}
-      <li>
-        <span class="ranked__num">{{ loop.index }}</span>
-        <div>
-          <a class="ranked__title" href="{{ p.url }}">{{ p.title }}</a>
-          <div class="meta"><time datetime="{{ p.published_at.isoformat() }}">{{ p.published_at|ago }}</time></div>
-        </div>
-      </li>
+      <li><span class="ranked__num">{{ loop.index }}</span><a class="ranked__title" href="{{ p.url }}">{{ p.title }}</a></li>
       {% endfor %}
     </ol>
   </section>
   {% endif %}
-  <section class="widget widget--signup">
-    <p class="kicker">Newsletter</p>
-    <h2 class="widget__title widget__title--big">Real American news in your inbox.</h2>
-    {% with source='sidebar' %}{% include "partials/_subscribe_form.html" %}{% endwith %}
-  </section>
 </aside>

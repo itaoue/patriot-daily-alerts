@@ -1,18 +1,4 @@
 {% extends "base.html" %}
-{% block ticker %}
-{% if ticker %}
-<div class="ticker" aria-label="Breaking headlines">
-  <div class="container ticker__inner">
-    <span class="ticker__label">Breaking</span>
-    <div class="ticker__track" data-ticker>
-      <div class="ticker__items">
-        {% for p in ticker %}<a href="{{ p.url }}">{{ p.title }}</a>{% endfor %}
-      </div>
-    </div>
-  </div>
-</div>
-{% endif %}
-{% endblock %}
 {% block content %}
 {% if not lead %}
 <div class="empty"><h1>No stories yet.</h1><p>Sign in to <a href="/admin/">the newsroom</a> to publish your first story, or run the WordPress importer.</p></div>
@@ -37,8 +23,8 @@
   </div>
 </section>
 
-<div class="layout">
-  <section class="main-col">
+<div class="mh-row">
+  <section class="mh-content">
     <div class="section-head">
       <h2 class="section-title">Latest</h2>
       <a class="section-more" href="{{ url_for('public.latest') }}">All stories →</a>
