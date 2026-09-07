@@ -80,7 +80,18 @@ railway run python tools/import_wp.py
 
 可加 `--max 300` 只导入最新 300 篇。导入完成后建议把 Railway 里的 `AUTO_SEED` 设为 `0`。
 
-> 图片：导入的文章沿用旧站 `wp-content/uploads` 的图片 URL。旧站下线前，请把 `uploads` 目录同步到对象存储（如 Cloudflare R2 / S3），然后在数据库里批量替换域名即可。Railway 的文件系统是临时的，不适合直接存图片，所以后台的封面图字段采用 URL 而非上传。
+## 图片：切域名前先镜像到仓库
+
+文章里的图片地址都是 `https://patriotdailyalerts.com/wp-content/uploads/...` 的绝对路径。域名指向新站后这些地址会打到新站，所以切域名前要把文件搬过来：
+
+```bash
+python tools/migrate_images.py --max 300   # 与导入的文章数保持一致；0 = 全部（约 750 MB，不建议放 git）
+git add src/static/uploads && git commit -m "Mirror images from WordPress" && git push
+```
+
+脚本把图片按原来的 `yyyy/mm/文件名` 存到 `src/static/uploads/`，Flask 在 `/wp-content/uploads/<路径>` 原样提供（一年缓存）。数据库里的地址不用改，切域名后自动生效，搜索引擎收录的旧图片地址也不会失效。重复运行只补缺失的文件。
+
+Railway 的文件系统是临时的，所以后台的封面图字段采用 URL 而非上传；新文章的图片放到 `src/static/uploads/` 一起提交，或使用外部图床。
 
 ## 目录结构
 
@@ -100,6 +111,7 @@ src/
   static/            # site.css / admin.css / site.js / 图标
 tools/
   import_wp.py       # 导入器的命令行入口
+  migrate_images.py  # 把旧站图片镜像到 src/static/uploads/
   seed_data.json     # 旧站快照
 tests/test_app.py    # 端到端冒烟测试
 Procfile / railway.json / runtime.txt / requirements.txt

@@ -92,3 +92,21 @@ def test_admin_import_page_and_status(client):
     assert r.status_code == 200 and b"Start import" in r.data
     s = client.get("/admin/import/status").get_json()
     assert s["state"] == "idle" and s["posts_in_db"] >= 20
+
+
+def test_legacy_upload_route_serves_mirrored_images(client, tmp_path):
+    import os
+
+    from flask import current_app
+
+    folder = os.path.join(current_app.static_folder, "uploads", "2099", "01")
+    os.makedirs(folder, exist_ok=True)
+    with open(os.path.join(folder, "probe.txt"), "w") as fh:
+        fh.write("img")
+    try:
+        assert client.get("/wp-content/uploads/2099/01/probe.txt").data == b"img"
+        assert client.get("/wp-content/uploads/2099/01/missing.jpg").status_code == 404
+        assert client.get("/wp-content/uploads/../../main.py").status_code == 404
+    finally:
+        os.remove(os.path.join(folder, "probe.txt"))
+        os.removedirs(folder)

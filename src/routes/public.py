@@ -1,6 +1,7 @@
+import os
 from datetime import timedelta
 
-from flask import Blueprint, Response, abort, current_app, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, current_app, redirect, render_template, request, send_from_directory, url_for
 from sqlalchemy import or_
 
 from src.models import Category, Page, Post, db, utcnow
@@ -108,6 +109,13 @@ def sitemap():
 def robots():
     body = f"User-agent: *\nDisallow: /admin/\nDisallow: /api/\nSitemap: {current_app.config['SITE_URL']}/sitemap.xml\n"
     return Response(body, mimetype="text/plain")
+
+
+@public_bp.route("/wp-content/uploads/<path:filename>")
+def legacy_upload(filename):
+    """Serve images mirrored from the old WordPress host (tools/migrate_images.py) at their original URLs."""
+    folder = os.path.join(current_app.static_folder, "uploads")
+    return send_from_directory(folder, filename, max_age=60 * 60 * 24 * 365)
 
 
 @public_bp.route("/remove-from-our-email-list/")
