@@ -33,6 +33,8 @@ class Post(db.Model):
     status = db.Column(db.String(20), default="published", index=True)  # published | draft
     featured = db.Column(db.Boolean, default=False)
     views = db.Column(db.Integer, default=0)
+    editor_notes = db.Column(db.Text, default="")  # notes from the automated editor pass / pipeline
+    sources = db.Column(db.Text, default="")  # JSON list of {"label", "url"}
     published_at = db.Column(db.DateTime, default=utcnow, index=True)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
@@ -43,6 +45,15 @@ class Post(db.Model):
     @property
     def is_published(self) -> bool:
         return self.status == "published" and self.published_at <= utcnow()
+
+    @property
+    def source_list(self) -> list:
+        import json
+
+        try:
+            return json.loads(self.sources) if self.sources else []
+        except ValueError:
+            return []
 
     @property
     def reading_minutes(self) -> int:

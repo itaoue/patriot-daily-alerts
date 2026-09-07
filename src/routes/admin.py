@@ -60,7 +60,8 @@ def dashboard():
         "messages": ContactMessage.query.count(),
     }
     recent = Post.query.order_by(Post.updated_at.desc()).limit(15).all()
-    return render_template("admin/dashboard.html", stats=stats, recent=recent)
+    drafts = Post.query.filter_by(status="draft").order_by(Post.published_at.desc()).limit(20).all()
+    return render_template("admin/dashboard.html", stats=stats, recent=recent, drafts=drafts)
 
 
 @admin_bp.route("/posts/")
@@ -68,11 +69,14 @@ def dashboard():
 def posts():
     page = max(1, request.args.get("page", 1, type=int))
     term = (request.args.get("q") or "").strip()
+    status = request.args.get("status", "")
     q = Post.query
     if term:
         q = q.filter(Post.title.ilike(f"%{term}%"))
+    if status in ("draft", "published"):
+        q = q.filter(Post.status == status)
     pagination = q.order_by(Post.published_at.desc()).paginate(page=page, per_page=25, error_out=False)
-    return render_template("admin/posts.html", pagination=pagination, term=term)
+    return render_template("admin/posts.html", pagination=pagination, term=term, status=status)
 
 
 def _fill_post(post: Post, form) -> None:
@@ -86,6 +90,8 @@ def _fill_post(post: Post, form) -> None:
     post.image_url = form.get("image_url", "").strip()[:600]
     post.author = form.get("author", "Staff").strip()[:120] or "Staff"
     post.category_id = int(form.get("category_id"))
+    if form.get("status") == "published" and post.status != "published" and not form.get("published_at", "").strip():
+        post.published_at = utcnow()  # approving a draft publishes it now, not at the draft's creation time
     post.status = "published" if form.get("status") == "published" else "draft"
     post.featured = form.get("featured") == "on"
     when = form.get("published_at", "").strip()

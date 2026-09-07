@@ -10,6 +10,8 @@
     <label>Body (HTML) <textarea name="body_html" rows="28" class="mono">{{ post.body_html if post else '' }}</textarea></label>
   </div>
   <aside class="editor__side">
+    {% if post and post.editor_notes %}<div class="notes-box"><b>Editor notes</b><p>{{ post.editor_notes }}</p></div>{% endif %}
+    {% if post and post.source_list %}<div class="notes-box"><b>Sources</b><ul>{% for s in post.source_list %}<li><a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.label or s.url }}</a></li>{% endfor %}</ul></div>{% endif %}
     <label>Status
       <select name="status">
         <option value="published" {{ 'selected' if post and post.status == 'published' }}>Published</option>

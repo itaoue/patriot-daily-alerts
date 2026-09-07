@@ -1,0 +1,46 @@
+name: Content pipeline
+on:
+  schedule:
+    - cron: "0 10 * * *"   # 06:00 ET — morning batch, 3 stories
+    - cron: "0 18 * * *"   # 14:00 ET — afternoon batch, 2 stories
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "Stories to write"
+        default: "3"
+      status:
+        description: "draft or published"
+        default: "draft"
+concurrency:
+  group: content-pipeline
+  cancel-in-progress: false
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+      PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+      SITE_URL: ${{ vars.SITE_URL || 'https://patriotdailyalerts.com' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements-content.txt
+      - name: Topic radar
+        run: python tools/radar.py --days 2 --print
+      - name: Write stories
+        run: |
+          if [ -n "${{ github.event.inputs.count }}" ]; then COUNT="${{ github.event.inputs.count }}"; STATUS="${{ github.event.inputs.status }}";
+          elif [ "$(date -u +%H)" -lt 14 ]; then COUNT=3; STATUS=draft; else COUNT=2; STATUS=draft; fi
+          python tools/write_stories.py --count "$COUNT" --status "$STATUS"
+      - name: Commit images and radar memory
+        run: |
+          git config user.name "content-bot"
+          git config user.email "news@patriotdailyalerts.com"
+          git add src/static/uploads content/radar/used.json
+          git diff --cached --quiet && echo "nothing to commit" || (git commit -m "Content pipeline: images for $(date -u +%F)" && git pull --rebase origin main && git push)

@@ -9,3 +9,7 @@ instance/
 .ruff_cache/
 .DS_Store
 .claude/
+# daily radar snapshots are regenerated each run; only the dedupe memory is tracked
+content/radar/*.json
+content/radar/*.md
+!content/radar/used.json

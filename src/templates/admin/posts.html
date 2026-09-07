@@ -2,6 +2,7 @@
 {% block title %}Stories{% endblock %}
 {% block content %}
 <div class="ah-row"><h1>Stories</h1>
+  <span class="filters"><a href="?">All</a> · <a href="?status=draft" {{ 'class=on' if status == 'draft' }}>Drafts</a> · <a href="?status=published" {{ 'class=on' if status == 'published' }}>Published</a></span>
   <form class="inline"><input type="search" name="q" value="{{ term }}" placeholder="Search titles…"><button>Search</button></form>
   <a class="btn" href="{{ url_for('admin.new_post') }}">+ New story</a></div>
 <table>

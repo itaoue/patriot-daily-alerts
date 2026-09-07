@@ -126,3 +126,31 @@ def test_www_redirects_to_bare_domain(client):
     assert r.status_code == 301
     assert r.headers["Location"] == "https://patriotdailyalerts.com/latest/?page=2"
     assert client.get("/", headers={"Host": "patriotdailyalerts.com"}).status_code == 200
+
+
+def test_five_sections_exist(client):
+    from src.models import Category
+
+    assert {c.slug for c in Category.query.all()} >= {"politics", "culture", "economy", "world", "border"}
+    assert b"/category/border/" in client.get("/").data
+
+
+def test_publish_api_requires_token_and_creates_draft(client):
+    from flask import current_app
+
+    current_app.config["PUBLISH_TOKEN"] = "t0k3n"
+    body = {"title": "Pipeline Story", "body_html": "<p>Hello</p><script>x()</script>", "category": "economy",
+            "sources": [{"label": "Newsmax", "url": "https://www.newsmax.com/x"}], "editor_notes": "looks fine"}
+    assert client.post("/api/publish", json=body).status_code == 401
+    r = client.post("/api/publish", json=body, headers={"Authorization": "Bearer t0k3n"})
+    assert r.status_code == 201
+    j = r.get_json()
+    assert j["status"] == "draft" and j["slug"] == "pipeline-story"
+    assert client.get("/pipeline-story/").status_code == 404  # drafts are not public
+    assert client.get("/pipeline-story/?preview=1").status_code == 200
+    post = Post.query.filter_by(slug="pipeline-story").first()
+    assert post.category.slug == "economy" and "<script>" not in post.body_html and post.source_list[0]["label"] == "Newsmax"
+    assert client.post("/api/publish", json=body, headers={"Authorization": "Bearer t0k3n"}).status_code == 409
+    r = client.get("/api/posts/recent?days=3", headers={"Authorization": "Bearer t0k3n"})
+    assert any(p["slug"] == "pipeline-story" for p in r.get_json()["posts"])
+    assert client.get("/api/posts/recent").status_code == 401

@@ -93,6 +93,26 @@ git add src/static/uploads && git commit -m "Mirror images from WordPress" && gi
 
 Railway 的文件系统是临时的，所以后台的封面图字段采用 URL 而非上传；新文章的图片放到 `src/static/uploads/` 一起提交，或使用外部图床。
 
+## 内容自动化流水线
+
+每天两批（美东 6:00 三篇、14:00 两篇），由 GitHub Actions 的 `content.yml` 定时执行，全部以**草稿**进入后台，人工审核后再发布：
+
+1. `tools/radar.py` 读取 Newsmax、Gateway Pundit、Western Journal、National Review、Washington Examiner、Fox、Daily Wire、Breitbart、NY Post、Daily Caller、Federalist、Just the News 的 RSS（被屏蔽的走 Google News），外加人物关注列表；把同一事件聚成一簇，按“几家同时报道 + 新鲜度 + 是否涉及关注人物”打分，并对照站内最近 14 天的文章去重。
+2. `tools/write_stories.py` 对每个选题：Claude 用联网搜索和网页抓取读 2 到 3 家报道和一手来源 → 写 500 到 800 词原创稿（保守派视角、正文只用短引语并注明出处）→ 第二次 Claude 调用当编辑，逐条核对事实、引语和法律风险 → 配图（公众人物用 Wikimedia 授权照片，否则用 xAI 生成的无人脸新闻图，存入 `src/static/uploads/` 随代码提交）→ `POST /api/publish` 进入后台草稿，编辑意见显示在文章编辑页右侧。
+3. 后台首页有 “Drafts awaiting review” 列表，把状态改为 Published 保存即可上线。
+
+GitHub 仓库需要配置 Secrets：`ANTHROPIC_API_KEY`、`XAI_API_KEY`、`PUBLISH_TOKEN`（与 Railway 变量 `PUBLISH_TOKEN` 相同的长随机串）。也可以在 Actions 页面手动触发 `Content pipeline`，指定篇数。
+
+本地试跑：
+
+```bash
+pip install -r requirements-content.txt
+export ANTHROPIC_API_KEY=... XAI_API_KEY=... PUBLISH_TOKEN=... SITE_URL=https://patriotdailyalerts.com
+python tools/radar.py --print          # 看选题
+python tools/write_stories.py --dry-run   # 看会选哪几篇
+python tools/write_stories.py --count 1   # 真写一篇进草稿
+```
+
 ## 目录结构
 
 ```
@@ -112,6 +132,9 @@ src/
 tools/
   import_wp.py       # 导入器的命令行入口
   migrate_images.py  # 把旧站图片镜像到 src/static/uploads/
+  radar.py           # 选题雷达（RSS + Google News，聚类打分）
+  write_stories.py   # Claude 写稿 + 编辑审核 + 配图 + 发布为草稿
+  fetch_person_photo.py / make_story_art.py / imgfit.py  # 配图
   seed_data.json     # 旧站快照
 tests/test_app.py    # 端到端冒烟测试
 Procfile / railway.json / runtime.txt / requirements.txt

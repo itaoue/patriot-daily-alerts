@@ -10,6 +10,17 @@ from src.models import Category, db  # noqa: E402
 from src.utils import format_date, format_datetime, time_ago  # noqa: E402
 
 
+def migrate_columns() -> None:
+    """Add columns introduced after the first deploy (create_all never alters existing tables)."""
+    from sqlalchemy import inspect, text
+
+    existing = {c["name"] for c in inspect(db.engine).get_columns("posts")}
+    for name in ("editor_notes", "sources"):
+        if name not in existing:
+            db.session.execute(text(f"ALTER TABLE posts ADD COLUMN {name} TEXT DEFAULT ''"))
+    db.session.commit()
+
+
 def create_app(config_object=Config) -> Flask:
     app = Flask(__name__, static_folder="static", template_folder="templates")
     app.config.from_object(config_object)
@@ -62,6 +73,7 @@ def create_app(config_object=Config) -> Flask:
 
     with app.app_context():
         db.create_all()
+        migrate_columns()
         if app.config["AUTO_SEED"]:
             from src.seed import seed_if_empty
 

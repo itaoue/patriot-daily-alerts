@@ -26,6 +26,7 @@ class Config:
     CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", "news@patriotdailyalerts.com")
 
     ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+    PUBLISH_TOKEN = os.environ.get("PUBLISH_TOKEN", "")  # bearer token for the content pipeline
     AUTO_SEED = os.environ.get("AUTO_SEED", "1") == "1"
 
     # Optional: push new subscribers to BigMailer (same integration as RetireBrief)

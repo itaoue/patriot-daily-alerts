@@ -11,6 +11,10 @@ SEED_FILE = os.path.join(os.path.dirname(__file__), "..", "tools", "seed_data.js
 # so "Latest News" is served by the /latest/ archive and Politics is the real section.
 DEFAULT_CATEGORIES = [
     ("politics", "Politics", "Washington, the White House, Congress and the courts."),
+    ("culture", "Culture", "Schools, faith, media, sports and the culture war."),
+    ("economy", "Economy", "Jobs, prices, taxes, markets and your money."),
+    ("world", "World", "America's friends and enemies abroad."),
+    ("border", "Border", "Immigration, the border and law enforcement."),
 ]
 
 

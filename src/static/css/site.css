@@ -114,6 +114,7 @@ h1{font-size:32px}h2{font-size:24px}h3{font-size:18px}
 .prose blockquote.twitter-tweet{max-width:550px;margin:20px auto;font-style:normal}.prose iframe.twitter-tweet{margin:20px auto!important}.prose div.twitter-tweet{display:block}
 .prose hr{border:0;border-top:1px solid var(--line);margin:30px 0}
 .prose--page{font-size:14px}
+.mh-sources{margin-top:30px;padding-top:15px;border-top:1px solid var(--line);font-size:13px}.mh-sources h3{font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}.mh-sources ul{margin:0;padding-left:18px}.mh-sources li{margin-bottom:4px}.mh-sources a{color:var(--red);font-weight:400}
 
 /* home + archives */
 .hero{display:grid;grid-template-columns:1.6fr 1fr;gap:25px;padding-bottom:25px;border-bottom:1px solid var(--line);margin-bottom:25px}

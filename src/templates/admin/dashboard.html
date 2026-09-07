@@ -8,6 +8,15 @@
   <div><b>{{ stats.subscribers }}</b><span>active subscribers</span></div>
   <div><b>{{ stats.messages }}</b><span>messages</span></div>
 </div>
+{% if drafts %}
+<h2>Drafts awaiting review</h2>
+<table>
+  <thead><tr><th>Title</th><th>Section</th><th>Editor notes</th><th>Created</th></tr></thead>
+  <tbody>{% for p in drafts %}
+  <tr><td><a href="{{ url_for('admin.edit_post', post_id=p.id) }}">{{ p.title }}</a></td><td>{{ p.category.name }}</td><td class="notes">{{ (p.editor_notes or '')[:160] }}</td><td>{{ p.published_at|date }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% endif %}
 <h2>Recently edited</h2>
 <table>
   <thead><tr><th>Title</th><th>Section</th><th>Status</th><th>Views</th><th>Published</th></tr></thead>

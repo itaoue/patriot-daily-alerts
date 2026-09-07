@@ -31,6 +31,9 @@
     {% endif %}
     <div class="entry-content prose">
       {{ post.body_html|safe }}
+      {% if post.source_list %}
+      <div class="mh-sources"><h3>Sources</h3><ul>{% for s in post.source_list %}<li><a href="{{ s.url }}" target="_blank" rel="noopener nofollow">{{ s.label or s.url }}</a></li>{% endfor %}</ul></div>
+      {% endif %}
     </div>
     <div class="mh-share" data-share data-title="{{ post.title }}">
       <span class="mh-share__label">Share</span>
