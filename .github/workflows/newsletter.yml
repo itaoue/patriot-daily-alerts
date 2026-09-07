@@ -1,0 +1,50 @@
+name: Newsletter
+on:
+  schedule:
+    - cron: "0 12 * * *"   # 08:00 ET — AM edition (two hours after the morning stories land for review)
+    - cron: "0 22 * * *"   # 18:00 ET — PM edition
+  workflow_dispatch:
+    inputs:
+      edition:
+        description: "am or pm (blank = by the clock)"
+        default: ""
+      ready:
+        description: "true = mark the BigMailer campaign ready to send; false = leave as draft"
+        default: "false"
+concurrency:
+  group: newsletter
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+      SITE_URL: ${{ vars.SITE_URL || 'https://patriotdailyalerts.com' }}
+      BIGMAILER_API_KEY: ${{ secrets.BIGMAILER_API_KEY }}
+      BIGMAILER_BRAND_ID: ${{ secrets.BIGMAILER_BRAND_ID }}
+      BIGMAILER_LIST_ID: ${{ secrets.BIGMAILER_LIST_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install requests==2.32.4
+      - name: Build issue
+        id: build
+        run: |
+          ED="${{ github.event.inputs.edition }}"
+          python tools/build_newsletter.py ${ED:+--edition $ED} | tee build.log
+          echo "campaign=$(ls -t dist/newsletters/*.json | head -1 | xargs -n1 basename | sed 's/.json$//')" >> "$GITHUB_OUTPUT"
+      - name: Publish "View online" copy
+        run: |
+          git config user.name "content-bot"
+          git config user.email "news@patriotdailyalerts.com"
+          git add src/static/newsletters
+          git diff --cached --quiet || (git commit -m "Newsletter ${{ steps.build.outputs.campaign }}" && git pull --rebase origin main && git push)
+      - name: Push to BigMailer
+        if: env.BIGMAILER_API_KEY != ''
+        run: |
+          READY="${{ github.event.inputs.ready }}"
+          python tools/push_newsletter.py "${{ steps.build.outputs.campaign }}" $([ "$READY" = "true" ] && echo --ready)

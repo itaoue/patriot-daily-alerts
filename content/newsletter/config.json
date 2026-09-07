@@ -1,0 +1,16 @@
+{
+  "from_name": "Patriot Daily Alerts",
+  "tagline": "Real American News. Delivered Daily.",
+  "about": "Patriot Daily Alerts distills the biggest stories of the day about the Real America and delivers them to your inbox, morning and evening, from a conservative perspective.",
+  "postal_address": "PatriotDailyAlerts.com, 8 The Green Ste. A, Dover, DE 19901, United States of America",
+  "leads": 3,
+  "trending": 6,
+  "sponsor": {
+    "enabled": false,
+    "label": "SPONSORED",
+    "headline": "21 Benefits People Often Forget To Claim",
+    "image": "",
+    "url": "https://patriotdailyalerts.com/",
+    "cta": "SEE THE LIST"
+  }
+}

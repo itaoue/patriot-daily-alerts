@@ -13,3 +13,4 @@ instance/
 content/radar/*.json
 content/radar/*.md
 !content/radar/used.json
+dist/

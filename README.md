@@ -115,6 +115,15 @@ python tools/write_stories.py --dry-run   # 看会选哪几篇
 python tools/write_stories.py --count 1   # 真写一篇进草稿
 ```
 
+## 邮件 Newsletter
+
+版式照搬 Middle America News 的早晚报：600px 单栏、logo 页头、深蓝的“edition + 日期”条、三条头条（大标题链接 + 全宽配图 + 红色 READ MORE 按钮）、Also Trending 标题列表、可选 SPONSORED 广告位、灰色页脚（退订、隐私、邮政地址、免责声明）。
+
+- `tools/build_newsletter.py`：从站点接口取已发布文章，最近 16 小时内的前三篇做头条，其余做 Also Trending；主题 = 头条标题，预览文字 = “and 第二条标题”；所有链接带 UTM。输出到 `dist/newsletters/<日期>-<am|pm>.html/.txt/.json`，并复制一份到 `src/static/newsletters/` 作为 “View online” 页面。
+- `tools/push_newsletter.py`：推到 BigMailer 建草稿活动（`--ready` 直接标记可发送）。需要 `BIGMAILER_API_KEY`、`BIGMAILER_BRAND_ID`、`BIGMAILER_LIST_ID`。
+- `.github/workflows/newsletter.yml`：每天美东 8:00（AM）和 18:00（PM）自动构建、提交 View online 页面、推 BigMailer 草稿；也可手动触发并选择 `ready=true`。
+- 文案、地址、广告位在 `content/newsletter/config.json` 里改。
+
 ## 目录结构
 
 ```
