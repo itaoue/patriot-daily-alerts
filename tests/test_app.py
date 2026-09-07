@@ -119,3 +119,10 @@ def test_article_with_tweet_loads_twitter_widget(client):
     assert b"platform.twitter.com/widgets.js" in r.data
     other = Post.query.filter(~Post.body_html.contains("twitter-tweet")).first()
     assert b"platform.twitter.com/widgets.js" not in client.get(f"/{other.slug}/").data
+
+
+def test_www_redirects_to_bare_domain(client):
+    r = client.get("/latest/?page=2", headers={"Host": "www.patriotdailyalerts.com"})
+    assert r.status_code == 301
+    assert r.headers["Location"] == "https://patriotdailyalerts.com/latest/?page=2"
+    assert client.get("/", headers={"Host": "patriotdailyalerts.com"}).status_code == 200

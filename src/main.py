@@ -1,7 +1,7 @@
 import os
 import sys
 
-from flask import Flask, g, request
+from flask import Flask, g, redirect, request
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -38,6 +38,14 @@ def create_app(config_object=Config) -> Flask:
             "nav_categories": getattr(g, "nav_categories", []),
             "current_path": request.path,
         }
+
+    @app.before_request
+    def redirect_www():
+        # www.example.com -> https://example.com (permanent), keeping path and query string
+        host = request.host.split(":")[0].lower()
+        if host.startswith("www."):
+            target = app.config["SITE_URL"] + request.full_path.rstrip("?")
+            return redirect(target, 301)
 
     @app.before_request
     def load_nav():
