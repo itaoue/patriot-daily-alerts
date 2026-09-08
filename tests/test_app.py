@@ -230,3 +230,31 @@ def test_poll_create_vote_results(client):
     assert client.get(f"/poll/{pid}/vote/5/").status_code == 404
     assert client.post("/api/polls", json={"id": pid, "delete": True}, headers=h).get_json()["deleted"] == pid
     assert client.get(f"/poll/{pid}/").status_code == 404
+
+
+def test_comments_flow(client):
+    from flask import current_app
+
+    from src.models import Comment
+
+    post = Post.query.filter_by(status="published").order_by(Post.published_at.desc()).first()
+    url = f"/{post.slug}/"
+    assert b"0 Comments" in client.get(url).data
+    r = client.post(f"{url}comment", data={"name": "Pat", "body": "Well said.", "email": ""})
+    assert r.status_code == 302 and r.headers["Location"].endswith("?comment=pending#comments")
+    assert b"awaiting review" in client.get(url + "?comment=pending").data and b"Well said." not in client.get(url).data
+    assert client.post(f"{url}comment", data={"name": "x", "body": "hi"}).headers["Location"].endswith("?comment=invalid#comment-form")
+    assert client.post(f"{url}comment", data={"name": "Bot", "body": "spam", "website": "x"}).status_code == 302
+    assert Comment.query.filter_by(name="Bot").count() == 0
+    c = Comment.query.filter_by(name="Pat").first()
+    with client.session_transaction() as s:
+        s["admin"] = True
+        csrf = s["csrf"]
+    assert b"Well said." in client.get("/admin/comments/?status=pending").data
+    client.post(f"/admin/comments/{c.id}", data={"csrf": csrf, "action": "approved"})
+    page = client.get(url).data
+    assert b"Well said." in page and b"1 Comment<" in page
+    current_app.config["COMMENTS_AUTO_APPROVE"] = True
+    r = client.post(f"{url}comment", data={"name": "Sam", "body": "Auto approved"})
+    assert r.headers["Location"].endswith("?comment=ok#comments") and b"Auto approved" in client.get(url).data
+    current_app.config["COMMENTS_AUTO_APPROVE"] = False

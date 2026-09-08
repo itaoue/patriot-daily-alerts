@@ -4,8 +4,8 @@ from datetime import timedelta
 from flask import Blueprint, Response, abort, current_app, redirect, render_template, request, send_from_directory, session, url_for
 from sqlalchemy import or_
 
-from src.models import Category, Page, Poll, PollVote, Post, db, utcnow
-from src.utils import strip_tags
+from src.models import Category, Comment, Page, Poll, PollVote, Post, db, utcnow
+from src.utils import strip_tags, valid_email
 
 public_bp = Blueprint("public", __name__)
 
@@ -149,6 +149,37 @@ def poll_vote(poll_id, choice):
     return resp
 
 
+@public_bp.route("/<slug>/comment", methods=["POST"])
+def add_comment(slug):
+    """Reader comment form. Honeypot + per-visitor rate limit; held for review unless COMMENTS_AUTO_APPROVE."""
+    if not current_app.config["COMMENTS_ENABLED"]:
+        abort(404)
+    post = Post.query.filter_by(slug=slug).first_or_404()
+    if not post.is_published:
+        abort(404)
+    f = request.form
+    back = url_for("public.article_or_page", slug=slug)
+    if f.get("website"):  # honeypot
+        return redirect(back + "?comment=ok#comments")
+    name = (f.get("name") or "").strip()[:60]
+    body = (f.get("body") or "").strip()[:2000]
+    email = (f.get("email") or "").strip()[:254]
+    if len(name) < 2 or len(body) < 3 or (email and not valid_email(email)):
+        return redirect(back + "?comment=invalid#comment-form")
+    voter = _voter_id()
+    from datetime import timedelta as _td
+
+    recent = Comment.query.filter(Comment.ip_hash == voter, Comment.created_at >= utcnow() - _td(hours=1)).count()
+    if recent >= current_app.config["COMMENTS_PER_HOUR"]:
+        return redirect(back + "?comment=slow#comment-form")
+    links = body.lower().count("http")
+    auto = current_app.config["COMMENTS_AUTO_APPROVE"] and links == 0
+    db.session.add(Comment(post_id=post.id, name=name, email=email, body=body, ip_hash=voter,
+                           user_agent=request.user_agent.string[:300], status="approved" if auto else "pending"))
+    db.session.commit()
+    return redirect(back + ("?comment=ok#comments" if auto else "?comment=pending#comments"))
+
+
 @public_bp.route("/wp-content/uploads/<path:filename>")
 def legacy_upload(filename):
     """Serve images mirrored from the old WordPress host (tools/migrate_images.py) at their original URLs."""
@@ -184,9 +215,11 @@ def article_or_page(slug):
         )
         prev_post = published_posts().filter(Post.published_at < post.published_at).order_by(Post.published_at.desc()).first()
         next_post = published_posts().filter(Post.published_at > post.published_at).order_by(Post.published_at.asc()).first()
+        comments = post.comments.filter_by(status="approved").order_by(Comment.created_at.asc()).limit(300).all()
         return render_template(
             "article.html", post=post, related=related, most_read=most_read(5, post.id),
-            prev_post=prev_post, next_post=next_post,
+            prev_post=prev_post, next_post=next_post, comments=comments,
+            comment_state=request.args.get("comment"), comments_enabled=current_app.config["COMMENTS_ENABLED"],
         )
     page = Page.query.filter_by(slug=slug).first_or_404()
     return render_template("page.html", page=page)

@@ -24,6 +24,7 @@ GitHub (main 分支)  ──push──▶  Railway 自动构建 (Nixpacks)  ─�
 - **URL 完全兼容旧站**：文章仍是 `/{slug}/`，分类仍是 `/category/{slug}/`，旧的 `/category/latest-news/` 301 到 `/latest/`，所以搜索引擎收录和外链不受影响
 - **邮件订阅**：三处订阅入口（底部横幅、侧栏、文中）；蜜罐防机器人；退订页 `/remove-from-our-email-list/`；可选推送到 BigMailer
 - **联系表单**：留言入库，后台可查看
+- **读者评论**：文章页底部评论区（姓名 + 可选邮箱 + 内容），蜜罐防机器人、每人每小时限 5 条；默认进后台 Comments 页审核后显示（Railway 变量 `COMMENTS_AUTO_APPROVE=1` 可改为无链接即自动通过，`COMMENTS_ENABLED=0` 关闭评论）
 - **SEO**：canonical、Open Graph、`NewsArticle` JSON-LD、`/feed/` RSS、`/sitemap.xml`、`/robots.txt`
 - **后台 Newsroom** `/admin/`：密码登录、CSRF 保护、文章增删改（草稿 / 定时发布 / 置顶头条）、静态页编辑、订阅者导出 CSV、留言箱；正文 HTML 经 bleach 过滤
 - 响应式布局、无障碍（跳转链接、aria、减少动画偏好）

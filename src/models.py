@@ -131,3 +131,19 @@ class PollVote(db.Model):
     choice = db.Column(db.Integer, nullable=False)
     voter = db.Column(db.String(64), default="", index=True)  # sha256 of ip+ua, truncated; one vote per voter per poll
     created_at = db.Column(db.DateTime, default=utcnow)
+
+
+class Comment(db.Model):
+    """Reader comment on a story. Held as "pending" until approved in the newsroom (unless COMMENTS_AUTO_APPROVE)."""
+
+    __tablename__ = "comments"
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=False, index=True)
+    post = db.relationship("Post", backref=db.backref("comments", lazy="dynamic", cascade="all, delete-orphan"))
+    name = db.Column(db.String(60), nullable=False)
+    email = db.Column(db.String(254), default="")  # never shown publicly
+    body = db.Column(db.Text, nullable=False)
+    ip_hash = db.Column(db.String(64), default="", index=True)
+    user_agent = db.Column(db.String(300), default="")
+    status = db.Column(db.String(16), default="pending", index=True)  # pending | approved | spam
+    created_at = db.Column(db.DateTime, default=utcnow, index=True)

@@ -4,7 +4,7 @@ from functools import wraps
 
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 
-from src.models import Category, ContactMessage, Page, Poll, Post, Subscriber, db, utcnow
+from src.models import Category, Comment, ContactMessage, Page, Poll, Post, Subscriber, db, utcnow
 from src.utils import make_excerpt, sanitize_html, slugify
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -58,6 +58,7 @@ def dashboard():
         "drafts": Post.query.filter_by(status="draft").count(),
         "subscribers": Subscriber.query.filter(Subscriber.unsubscribed_at.is_(None)).count(),
         "messages": ContactMessage.query.count(),
+        "pending_comments": Comment.query.filter_by(status="pending").count(),
     }
     recent = Post.query.order_by(Post.updated_at.desc()).limit(15).all()
     drafts = Post.query.filter_by(status="draft").order_by(Post.published_at.desc()).limit(20).all()
@@ -208,3 +209,28 @@ def import_status():
 def polls():
     rows = Poll.query.order_by(Poll.created_at.desc()).limit(60).all()
     return render_template("admin/polls.html", polls=[(p, p.results(), p.votes.count()) for p in rows])
+
+
+@admin_bp.route("/comments/")
+@login_required
+def comments():
+    status = request.args.get("status", "pending")
+    q = Comment.query
+    if status in ("pending", "approved", "spam"):
+        q = q.filter(Comment.status == status)
+    rows = q.order_by(Comment.created_at.desc()).limit(200).all()
+    counts = {s: Comment.query.filter_by(status=s).count() for s in ("pending", "approved", "spam")}
+    return render_template("admin/comments.html", comments=rows, status=status, counts=counts)
+
+
+@admin_bp.route("/comments/<int:comment_id>", methods=["POST"])
+@login_required
+def moderate_comment(comment_id):
+    c = Comment.query.get_or_404(comment_id)
+    action = request.form.get("action")
+    if action == "delete":
+        db.session.delete(c)
+    elif action in ("approved", "pending", "spam"):
+        c.status = action
+    db.session.commit()
+    return redirect(request.form.get("next") or url_for("admin.comments"))

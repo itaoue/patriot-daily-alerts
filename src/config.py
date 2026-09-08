@@ -37,6 +37,9 @@ class Config:
     GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", "G-7J6WNSF6DJ")  # GA4 property 371513253
 
     POSTS_PER_PAGE = 12
+    COMMENTS_ENABLED = os.environ.get("COMMENTS_ENABLED", "1") == "1"
+    COMMENTS_AUTO_APPROVE = os.environ.get("COMMENTS_AUTO_APPROVE", "0") == "1"  # default: hold for review in the newsroom
+    COMMENTS_PER_HOUR = int(os.environ.get("COMMENTS_PER_HOUR", "5"))  # per visitor
     # optional offer shown under poll results (same shape as content/newsletter/config.json "sponsor")
     POLL_SPONSOR = None
     SESSION_COOKIE_HTTPONLY = True

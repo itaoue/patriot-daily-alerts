@@ -7,6 +7,7 @@
   <div><b>{{ stats.drafts }}</b><span>drafts</span></div>
   <div><b>{{ stats.subscribers }}</b><span>active subscribers</span></div>
   <div><b>{{ stats.messages }}</b><span>messages</span></div>
+  <div><b>{{ stats.pending_comments }}</b><span><a href="{{ url_for('admin.comments') }}">comments awaiting review</a></span></div>
 </div>
 {% if drafts %}
 <h2>Drafts awaiting review</h2>
