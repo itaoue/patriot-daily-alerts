@@ -190,21 +190,35 @@ def email_subject(leads, campaign):
         body = _re.sub(r"\s+", " ", html.unescape(body)).strip()[:1800]
         return f"STORY {n}\nHeadline: {p['title']}\nSummary: {p.get('excerpt', '')}\nText: {body}"
 
+    def has_caps(t):
+        return bool(_re.search(r"\b[A-Z]{4,}\b", t))
+
+    def tidy(t):
+        return _re.sub(r"\s+[-–]\s+", " — ", t.strip().strip('"'))  # Middle America News uses the em dash
+
     try:
         import anthropic
 
         client = anthropic.Anthropic(max_retries=3)
-        msg = client.messages.create(
-            model=os.environ.get("EDITOR_MODEL", "claude-sonnet-5"), max_tokens=300,
-            output_config={"effort": "low", "format": {"type": "json_schema", "schema": SUBJECT_SCHEMA}},
-            system=SUBJECT_RULES,
-            messages=[{"role": "user", "content": story(leads[0], 1) + ("\n\n" + story(leads[1], 2) if len(leads) > 1 else "")}])
-        if msg.stop_reason == "end_turn":
+        content = story(leads[0], 1) + ("\n\n" + story(leads[1], 2) if len(leads) > 1 else "")
+        messages = [{"role": "user", "content": content}]
+        for attempt in range(2):
+            msg = client.messages.create(
+                model=os.environ.get("EDITOR_MODEL", "claude-sonnet-5"), max_tokens=300,
+                output_config={"effort": "low", "format": {"type": "json_schema", "schema": SUBJECT_SCHEMA}},
+                system=SUBJECT_RULES, messages=messages)
+            if msg.stop_reason != "end_turn":
+                break
             data = json.loads(next(b.text for b in msg.content if b.type == "text"))
-            subject = data.get("subject", "").strip().strip('"')
-            teaser = data.get("teaser", "").strip().strip('"')
-            if 40 <= len(subject) <= 110:
+            subject, teaser = tidy(data.get("subject", "")), tidy(data.get("teaser", ""))
+            if 40 <= len(subject) <= 110 and has_caps(subject) and (len(teaser) < 20 or has_caps(teaser)):
                 return subject[:120], (teaser[:120] if len(teaser) >= 20 else fallback[1])
+            if attempt == 0:  # one corrective pass: the ALL-CAPS anchor word is mandatory in both lines
+                messages += [{"role": "assistant", "content": json.dumps(data)},
+                             {"role": "user", "content": "Rewrite: the subject AND the teaser must each contain exactly one ALL-CAPS anchor word "
+                                                         "(e.g. BOMBSHELL, BLOCKS, REFUSES, EXPOSED, STUNNING, WARNS) and stay within 55-90 characters. Same facts."}]
+        if 40 <= len(subject) <= 110:
+            return subject[:120], (teaser[:120] if len(teaser) >= 20 else fallback[1])
     except Exception as exc:  # noqa: BLE001
         print(f"subject line generation failed ({exc}); using story titles")
     return fallback
