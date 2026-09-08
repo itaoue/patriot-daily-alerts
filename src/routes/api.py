@@ -176,6 +176,15 @@ def create_poll():
     if not _pipeline_authorized():
         return jsonify(error="unauthorized"), 401
     data = request.get_json(silent=True) or {}
+    if data.get("delete"):
+        poll = Poll.query.get(int(data.get("id") or 0))
+        if not poll and data.get("campaign"):
+            poll = Poll.query.filter_by(campaign=data["campaign"]).first()
+        if not poll:
+            return jsonify(ok=False, error="no such poll"), 404
+        db.session.delete(poll)
+        db.session.commit()
+        return jsonify(ok=True, deleted=poll.id)
     question = (data.get("question") or "").strip()[:300]
     options = [str(o).strip()[:120] for o in (data.get("options") or []) if str(o).strip()][:4]
     if not question or len(options) < 2:

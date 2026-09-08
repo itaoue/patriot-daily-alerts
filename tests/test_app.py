@@ -228,3 +228,5 @@ def test_poll_create_vote_results(client):
     page = client.get(f"/poll/{pid}/?voted=1")
     assert page.status_code == 200 and b"Thank you for taking the poll" in page.data and b"Do you approve?" in page.data
     assert client.get(f"/poll/{pid}/vote/5/").status_code == 404
+    assert client.post("/api/polls", json={"id": pid, "delete": True}, headers=h).get_json()["deleted"] == pid
+    assert client.get(f"/poll/{pid}/").status_code == 404

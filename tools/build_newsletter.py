@@ -162,7 +162,7 @@ def poll_block(poll):
         f'<td align="center" bgcolor="{PAPER}" style="border:2px solid {NAVY};border-radius:3px;padding:11px 14px;">'
         f'<a href="{esc(u)}?utm_source=newsletter&utm_medium=email&utm_campaign=poll" target="_blank" style="display:block;font-family:{FONT};font-size:17px;font-weight:700;color:{NAVY};text-decoration:none;">{esc(label)}</a>'
         f'</td></tr></table></td></tr>'
-        for label, u in zip(poll["options"], poll["vote_urls"], strict=False))
+        for label, u in zip(poll["options"], poll["vote_urls"]))
     return f'''
 <tr><td style="padding:22px 25px 4px;font-family:{FONT};font-size:20px;line-height:120%;font-weight:700;color:{INK};text-transform:uppercase;letter-spacing:.04em;text-align:center;">
   <span style="border-bottom:3px solid {RED};padding-bottom:4px;">{esc(heading)}</span></td></tr>
@@ -221,7 +221,7 @@ def render(leads, trending, edition, date_et, campaign, view_url, poll=None):
     text = (f"{CONFIG['from_name']} - {date_et.strftime('%A, %B %d, %Y')}\n\n"
             + "\n\n".join(f"{p['title']}\n{link(p, campaign)}" for p in leads)
             + ("\n\nALSO TRENDING\n" + "\n".join(f"- {p['title']}\n  {link(p, campaign)}" for p in trending) if trending else "")
-            + (f"\n\nTODAY'S POLL: {poll['question']}\n" + "\n".join(f"- {o}: {u}" for o, u in zip(poll["options"], poll["vote_urls"], strict=False)) if poll else "")
+            + (f"\n\nTODAY'S POLL: {poll['question']}\n" + "\n".join(f"- {o}: {u}" for o, u in zip(poll["options"], poll["vote_urls"])) if poll else "")
             + f"\n\nUnsubscribe: *|UNSUB|*\n{CONFIG['postal_address']}\n")
     return subject, preheader, body, text
 
