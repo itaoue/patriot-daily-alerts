@@ -119,31 +119,44 @@ POLL_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["qu
 
 
 def poll_question(leads, campaign):
-    """One reader-poll question for the issue: Claude (Sonnet 5) from the lead stories, else a rotating fallback."""
+    """One reader-poll question about the LEAD story: specific to its decision/claim/event, never a generic approval question."""
     cfg = CONFIG.get("poll") or {}
+    lead = leads[0]
+    import re as _re
+
+    body = _re.sub(r"<[^>]+>", " ", lead.get("body_html") or "")
+    body = _re.sub(r"\s+", " ", html.unescape(body)).strip()[:1500]
     if os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"):
         try:
             import anthropic
 
             client = anthropic.Anthropic(max_retries=3)
-            heads = "\n".join(f"- {p['title']}: {p.get('excerpt', '')}" for p in leads)
+            prompt = (
+                "Write ONE reader-poll question for a conservative American news email, about the specific story below.\n\n"
+                "Rules:\n"
+                "- The question must be about the concrete decision, claim, or event in THIS story: name the person or institution and the action.\n"
+                "- Ask the reader's opinion or prediction about that specific thing. Under 18 words. Plain, direct, no jargon.\n"
+                "- Never ask a generic question. BAD: 'Do you approve of the job President Trump is doing?' or 'Is the media telling the truth?'\n"
+                "  GOOD: 'Should the Supreme Court let the Postal Service enforce its mail-ballot rule before the midterms?' / "
+                "'Was Giuliani right to tell Mamdani to skip the 9/11 ceremony?' / 'Will Bessent's $40 oil prediction come true this year?'\n"
+                "- 2 or 3 answer options tailored to the question, each under 6 words (e.g. 'Yes, enforce it' / 'No, wait for the courts' / 'Not sure').\n"
+                "- Do not name private individuals.\n\n"
+                f"Headline: {lead['title']}\nSummary: {lead.get('excerpt', '')}\nStory: {body}"
+            )
             msg = client.messages.create(
-                model=os.environ.get("EDITOR_MODEL", "claude-sonnet-5"), max_tokens=400, output_config={"effort": "low", "format": {"type": "json_schema", "schema": POLL_SCHEMA}},
-                messages=[{"role": "user", "content": (
-                    "Write one reader-poll question for a conservative American news email, based on today's lead story below. "
-                    "Plain, direct, under 16 words, answerable with 2 or 3 short options (e.g. Yes / No / Not sure). "
-                    "Ask for the reader's opinion or prediction, not a fact. Do not name private individuals.\n\n" + heads)}])
+                model=os.environ.get("EDITOR_MODEL", "claude-sonnet-5"), max_tokens=400,
+                output_config={"effort": "low", "format": {"type": "json_schema", "schema": POLL_SCHEMA}},
+                messages=[{"role": "user", "content": prompt}])
             if msg.stop_reason == "end_turn":
                 data = json.loads(next(b.text for b in msg.content if b.type == "text"))
                 if data.get("question") and len(data.get("options", [])) >= 2:
                     return data["question"][:300], [o[:120] for o in data["options"][:3]]
         except Exception as exc:  # noqa: BLE001 - never block the issue on the poll
-            print(f"poll question generation failed ({exc}); using fallback")
-    fb = cfg.get("fallback") or []
-    if not fb:
+            print(f"poll question generation failed ({exc}); using story-based fallback")
+    if not cfg.get("fallback", True):
         return None, None
-    pick = fb[sum(ord(ch) for ch in campaign) % len(fb)]
-    return pick["question"], pick["options"]
+    # fallback without Claude: still about the lead story rather than a generic question
+    return f"{lead['title']} — right call or wrong call?"[:300], ["Right call", "Wrong call", "Not sure"]
 
 
 def create_poll(token, campaign, question, options):

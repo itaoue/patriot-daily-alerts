@@ -1,7 +1,7 @@
 name: Newsletter
 on:
   schedule:
-    - cron: "0 2 * * *"    # 10:00 Beijing (02:00 UTC) — one daily issue, two hours after the 08:00 story batch; lands in BigMailer as a draft
+    - cron: "7 2 * * *"    # 10:07 Beijing (02:07 UTC; off the top of the hour) — one daily issue, two hours after the story batch; BigMailer draft
   workflow_dispatch:
     inputs:
       edition:

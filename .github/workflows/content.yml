@@ -1,7 +1,7 @@
 name: Content pipeline
 on:
   schedule:
-    - cron: "0 0 * * *"    # 08:00 Beijing (00:00 UTC, 20:00 ET the evening before) — 5 stories, published automatically
+    - cron: "7 0 * * *"    # 08:07 Beijing (00:07 UTC; off the top of the hour, which GitHub delays) — 5 stories, published automatically
   workflow_dispatch:
     inputs:
       count:
