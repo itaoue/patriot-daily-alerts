@@ -82,8 +82,12 @@ def contact():
     message = (f.get("message") or "").strip()[:5000]
     if not message or not valid_email(email):
         return redirect("/contact-us/?error=1")
-    db.session.add(ContactMessage(name=name, email=email, subject=subject, message=message))
+    msg = ContactMessage(name=name, email=email, subject=subject, message=message)
+    db.session.add(msg)
     db.session.commit()
+    from src.notify import notify_contact
+
+    notify_contact(msg)
     return redirect("/contact-us/?sent=1")
 
 

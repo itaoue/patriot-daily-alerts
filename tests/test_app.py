@@ -258,3 +258,28 @@ def test_comments_flow(client):
     r = client.post(f"{url}comment", data={"name": "Sam", "body": "Auto approved"})
     assert r.headers["Location"].endswith("?comment=ok#comments") and b"Auto approved" in client.get(url).data
     current_app.config["COMMENTS_AUTO_APPROVE"] = False
+
+
+def test_comment_notification_and_one_click_moderation(client, monkeypatch):
+    from flask import current_app
+
+    from src import notify
+    from src.models import Comment
+
+    sent = []
+    monkeypatch.setattr(notify, "_send_now", lambda cfg, subject, text, html: sent.append((subject, text)))
+    current_app.config.update(NOTIFY_EMAIL="editor@example.com", SMTP_HOST="smtp.example.com", SMTP_USER="u", SMTP_PASSWORD="p")
+    post = Post.query.filter_by(status="published").order_by(Post.published_at.desc()).first()
+    client.post(f"/{post.slug}/comment", data={"name": "Notifier", "body": "Ping the editor"})
+    assert sent and sent[0][0].startswith("New comment on:") and "Ping the editor" in sent[0][1]
+    approve_url = [ln.split(": ", 1)[1] for ln in sent[0][1].splitlines() if ln.startswith("Approve: ")][0]
+    path = approve_url.replace(current_app.config["SITE_URL"], "")
+    with client.session_transaction() as s:
+        s["admin"] = False
+    r = client.get(path)
+    assert r.status_code == 200 and b"Approved" in r.data
+    assert Comment.query.filter_by(name="Notifier").first().status == "approved"
+    assert client.get("/admin/moderate/not-a-valid-token").status_code == 404
+    client.post("/api/contact", data={"name": "Reader", "email": "r@example.com", "subject": "Tip", "message": "Look into this"})
+    assert sent[-1][0] == "Contact form: Tip"
+    current_app.config.update(NOTIFY_EMAIL="", SMTP_HOST="", SMTP_USER="", SMTP_PASSWORD="")

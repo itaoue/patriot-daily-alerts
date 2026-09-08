@@ -37,6 +37,14 @@ class Config:
     GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", "G-7J6WNSF6DJ")  # GA4 property 371513253
 
     POSTS_PER_PAGE = 12
+    # editor notifications (new comments, contact messages): set NOTIFY_EMAIL plus RESEND_API_KEY or SMTP_*
+    NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", "")
+    MAIL_FROM = os.environ.get("MAIL_FROM", "")
+    RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+    SMTP_HOST = os.environ.get("SMTP_HOST", "")
+    SMTP_PORT = os.environ.get("SMTP_PORT", "587")
+    SMTP_USER = os.environ.get("SMTP_USER", "")
+    SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
     COMMENTS_ENABLED = os.environ.get("COMMENTS_ENABLED", "1") == "1"
     COMMENTS_AUTO_APPROVE = os.environ.get("COMMENTS_AUTO_APPROVE", "0") == "1"  # default: hold for review in the newsroom
     COMMENTS_PER_HOUR = int(os.environ.get("COMMENTS_PER_HOUR", "5"))  # per visitor

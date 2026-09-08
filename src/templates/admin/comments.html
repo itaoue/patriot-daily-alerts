@@ -2,6 +2,7 @@
 {% block title %}Comments{% endblock %}
 {% block content %}
 <div class="ah-row"><h1>Comments</h1>
+  <form method="post" action="{{ url_for('admin.notify_test') }}" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button title="Send a test notification email to NOTIFY_EMAIL">Send test email</button></form>
   <span class="filters">{% for s in ('pending', 'approved', 'spam') %}<a href="?status={{ s }}" {{ 'class=on' if status == s }}>{{ s|capitalize }} ({{ counts[s] }})</a>{{ ' · ' if not loop.last }}{% endfor %}</span></div>
 {% for c in comments %}
 <article class="msg">

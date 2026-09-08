@@ -174,9 +174,13 @@ def add_comment(slug):
         return redirect(back + "?comment=slow#comment-form")
     links = body.lower().count("http")
     auto = current_app.config["COMMENTS_AUTO_APPROVE"] and links == 0
-    db.session.add(Comment(post_id=post.id, name=name, email=email, body=body, ip_hash=voter,
-                           user_agent=request.user_agent.string[:300], status="approved" if auto else "pending"))
+    comment = Comment(post_id=post.id, name=name, email=email, body=body, ip_hash=voter,
+                      user_agent=request.user_agent.string[:300], status="approved" if auto else "pending")
+    db.session.add(comment)
     db.session.commit()
+    from src.notify import notify_comment
+
+    notify_comment(comment)
     return redirect(back + ("?comment=ok#comments" if auto else "?comment=pending#comments"))
 
 

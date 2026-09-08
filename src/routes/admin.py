@@ -234,3 +234,36 @@ def moderate_comment(comment_id):
         c.status = action
     db.session.commit()
     return redirect(request.form.get("next") or url_for("admin.comments"))
+
+
+@admin_bp.route("/moderate/<token>")
+def moderate_by_token(token):
+    """One-click Approve / Spam links from the notification email (signed, no login needed)."""
+    from src.notify import verify_moderation_token
+
+    data = verify_moderation_token(token)
+    if not data:
+        abort(404)
+    comment_id, action = data
+    c = Comment.query.get_or_404(comment_id)
+    if action in ("approved", "spam"):
+        c.status = action
+        db.session.commit()
+    return render_template("admin/moderated.html", comment=c, action=action)
+
+
+@admin_bp.route("/notify-test", methods=["POST"])
+@login_required
+def notify_test():
+    from src.notify import configured, send
+
+    if not configured():
+        flash("Notifications are not configured: set NOTIFY_EMAIL and RESEND_API_KEY or SMTP_HOST/SMTP_USER/SMTP_PASSWORD.", "error")
+    else:
+        try:
+            body = "This is a test from the newsroom."
+            send("Test: Patriot Daily Alerts notifications work", body, f"<p>{body}</p>", wait=True)
+            flash(f"Test email sent to {current_app.config['NOTIFY_EMAIL']}.", "ok")
+        except Exception as exc:  # noqa: BLE001
+            flash(f"Sending failed: {exc}", "error")
+    return redirect(url_for("admin.comments"))
