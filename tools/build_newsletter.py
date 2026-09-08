@@ -115,7 +115,7 @@ def sponsor_block(s):
 
 
 POLL_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["question", "options"],
-               "properties": {"question": {"type": "string"}, "options": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 3}}}
+               "properties": {"question": {"type": "string"}, "options": {"type": "array", "items": {"type": "string"}}}}  # 2-3 options enforced in code
 
 
 def poll_question(leads, campaign):
