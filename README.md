@@ -95,7 +95,7 @@ Railway 的文件系统是临时的，所以后台的封面图字段采用 URL �
 
 ## 内容自动化流水线
 
-每天两批（美东 6:00 三篇、14:00 两篇），由 GitHub Actions 的 `content.yml` 定时执行，全部以**草稿**进入后台，人工审核后再发布：
+每天一批（北京时间早上 8:00，即 UTC 0:00，五篇），由 GitHub Actions 的 `content.yml` 定时执行，全部以**草稿**进入后台，人工审核后再发布：
 
 1. `tools/radar.py` 读取 Newsmax、Gateway Pundit、Western Journal、National Review、Washington Examiner、Fox、Daily Wire、Breitbart、NY Post、Daily Caller、Federalist、Just the News 的 RSS（被屏蔽的走 Google News），外加人物关注列表；把同一事件聚成一簇，按“几家同时报道 + 新鲜度 + 是否涉及关注人物”打分，并对照站内最近 14 天的文章去重。
 2. `tools/write_stories.py` 对每个选题：Claude 用联网搜索和网页抓取读 2 到 3 家报道和一手来源 → 写 500 到 800 词原创稿（保守派视角、正文只用短引语并注明出处）→ 第二次 Claude 调用当编辑，逐条核对事实、引语和法律风险 → 配图（公众人物用 Wikimedia 授权照片，否则用 xAI 生成的无人脸新闻图，存入 `src/static/uploads/` 随代码提交）→ `POST /api/publish` 进入后台草稿，编辑意见显示在文章编辑页右侧。

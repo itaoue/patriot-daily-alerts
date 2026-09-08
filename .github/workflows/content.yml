@@ -1,8 +1,7 @@
 name: Content pipeline
 on:
   schedule:
-    - cron: "0 10 * * *"   # 06:00 ET — morning batch, 3 stories
-    - cron: "0 18 * * *"   # 14:00 ET — afternoon batch, 2 stories
+    - cron: "0 0 * * *"    # 08:00 Beijing (00:00 UTC, 20:00 ET the evening before) — 5 stories as drafts for review
   workflow_dispatch:
     inputs:
       count:
@@ -46,7 +45,7 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.mode }}" = "fix-drafts" ]; then python tools/write_stories.py --fix-drafts --status "${{ github.event.inputs.status }}"; exit 0; fi
           if [ -n "${{ github.event.inputs.count }}" ]; then COUNT="${{ github.event.inputs.count }}"; STATUS="${{ github.event.inputs.status }}";
-          elif [ "$(date -u +%H)" -lt 14 ]; then COUNT=3; STATUS=draft; else COUNT=2; STATUS=draft; fi
+          else COUNT=5; STATUS=draft; fi
           python tools/write_stories.py --count "$COUNT" --status "$STATUS"
       - name: Commit images and radar memory
         run: |
