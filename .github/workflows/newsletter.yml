@@ -1,12 +1,11 @@
 name: Newsletter
 on:
   schedule:
-    - cron: "0 12 * * *"   # 08:00 ET — AM edition (two hours after the morning stories land for review)
-    - cron: "0 22 * * *"   # 18:00 ET — PM edition
+    - cron: "0 2 * * *"    # 10:00 Beijing (02:00 UTC) — one daily issue, two hours after the 08:00 story batch; lands in BigMailer as a draft
   workflow_dispatch:
     inputs:
       edition:
-        description: "am or pm (blank = by the clock)"
+        description: "daily, am or pm (blank = daily)"
         default: ""
       ready:
         description: "true = mark the BigMailer campaign ready to send; false = leave as draft"

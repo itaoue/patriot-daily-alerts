@@ -2,8 +2,8 @@
 """
 Build the Patriot Daily Alerts email newsletter (AM / PM edition) from the site's published stories.
 
-    python tools/build_newsletter.py                 # edition picked from the clock (ET): AM before noon, else PM
-    python tools/build_newsletter.py --edition pm --date 2026-09-08
+    python tools/build_newsletter.py                 # one daily issue: <date>-daily
+    python tools/build_newsletter.py --edition pm --date 2026-09-08   # am/pm ids if you ever run two a day
     python tools/build_newsletter.py --hours 24      # look back further for lead stories
 
 Layout mirrors the Middle America News daily: one 600px column, dark masthead with the logo,
@@ -169,7 +169,7 @@ def render(leads, trending, edition, date_et, campaign, view_url):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--edition", choices=["am", "pm"])
+    ap.add_argument("--edition", choices=["daily", "am", "pm"], default="daily")
     ap.add_argument("--date", help="YYYY-MM-DD (default: today in ET)")
     ap.add_argument("--hours", type=int, default=16, help="lead stories must be published within this many hours")
     ap.add_argument("--token", default=os.environ.get("PUBLISH_TOKEN", ""))
@@ -177,7 +177,7 @@ def main():
     if not a.token:
         sys.exit("PUBLISH_TOKEN is not set")
     now_et = dt.datetime.now(ET)
-    edition = a.edition or ("am" if now_et.hour < 12 else "pm")
+    edition = a.edition
     date_et = dt.datetime.strptime(a.date, "%Y-%m-%d").replace(tzinfo=ET) if a.date else now_et
     campaign = f"{date_et.strftime('%Y-%m-%d')}-{edition}"
     view_url = f"{SITE}/static/newsletters/{campaign}.html"
