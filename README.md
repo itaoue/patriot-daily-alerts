@@ -95,11 +95,11 @@ Railway 的文件系统是临时的，所以后台的封面图字段采用 URL �
 
 ## 内容自动化流水线
 
-每天一批（北京时间早上 8:00，即 UTC 0:00，五篇），由 GitHub Actions 的 `content.yml` 定时执行，全部以**草稿**进入后台，人工审核后再发布：
+每天一批（北京时间早上 8:00，即 UTC 0:00，五篇），由 GitHub Actions 的 `content.yml` 定时执行，**自动发布**（AI 编辑判定 reject 的稿子才留为草稿）：
 
 1. `tools/radar.py` 读取 Newsmax、Gateway Pundit、Western Journal、National Review、Washington Examiner、Fox、Daily Wire、Breitbart、NY Post、Daily Caller、Federalist、Just the News 的 RSS（被屏蔽的走 Google News），外加人物关注列表；把同一事件聚成一簇，按“几家同时报道 + 新鲜度 + 是否涉及关注人物”打分，并对照站内最近 14 天的文章去重。
 2. `tools/write_stories.py` 对每个选题：Claude 用联网搜索和网页抓取读 2 到 3 家报道和一手来源 → 写 500 到 800 词原创稿（保守派视角、正文只用短引语并注明出处）→ 第二次 Claude 调用当编辑，逐条核对事实、引语和法律风险 → 配图（公众人物用 Wikimedia 授权照片，否则用 xAI 生成的无人脸新闻图，存入 `src/static/uploads/` 随代码提交）→ `POST /api/publish` 进入后台草稿，编辑意见显示在文章编辑页右侧。
-3. 后台首页有 “Drafts awaiting review” 列表，把状态改为 Published 保存即可上线。
+3. 只有 AI 编辑判定为 reject 的稿子会留在后台 “Drafts awaiting review” 里；其余直接上线。想改回人工审核，把工作流里的 `STATUS=published` 改成 `draft`。
 
 **成本控制**：每次调用都会在运行日志里打印 token 用量和估算费用，运行结束给出总额。默认 `STORY_EFFORT=medium`；调研每篇最多 3 次搜索加 3 次抓取、每页 6k token 并启用提示缓存。可在仓库 Variables 里设 `RESEARCH_MODEL` / `EDITOR_MODEL`（如 `claude-sonnet-5`）进一步降本，写稿仍用 `STORY_MODEL`。
 
