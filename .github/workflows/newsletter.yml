@@ -10,6 +10,9 @@ on:
       ready:
         description: "true = mark the BigMailer campaign ready to send; false = leave as draft"
         default: "false"
+      push:
+        description: "false = build only (preview the subject line in the log), no BigMailer campaign"
+        default: "true"
 concurrency:
   group: newsletter
 jobs:
@@ -46,7 +49,7 @@ jobs:
           git add src/static/newsletters
           git diff --cached --quiet || (git commit -m "Newsletter ${{ steps.build.outputs.campaign }}" && git pull --rebase origin main && git push)
       - name: Push to BigMailer
-        if: env.BIGMAILER_API_KEY != ''
+        if: env.BIGMAILER_API_KEY != '' && github.event.inputs.push != 'false'
         run: |
           READY="${{ github.event.inputs.ready }}"
           python tools/push_newsletter.py "${{ steps.build.outputs.campaign }}" $([ "$READY" = "true" ] && echo --ready)

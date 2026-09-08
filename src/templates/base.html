@@ -42,7 +42,6 @@
       </button>
       <ul id="siteNav">
         <li class="{{ 'is-active' if current_path == '/' }}"><a href="/">Home</a></li>
-        <li class="{{ 'is-active' if current_path.startswith('/latest') }}"><a href="{{ url_for('public.latest') }}">Latest News</a></li>
         {% for c in nav_categories %}
         <li class="{{ 'is-active' if current_path == '/category/' ~ c.slug ~ '/' }}"><a href="{{ url_for('public.category', slug=c.slug) }}">{{ c.name }}</a></li>
         {% endfor %}

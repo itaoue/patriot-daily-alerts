@@ -46,14 +46,14 @@ PRICES = {  # $ per million tokens: input, output, cache read, cache write
     "claude-opus-5": (5.0, 25.0, 0.5, 6.25), "claude-sonnet-5": (2.0, 10.0, 0.2, 2.5), "claude-haiku-4-5": (1.0, 5.0, 0.1, 1.25),
 }
 USAGE = {"calls": 0, "cost": 0.0, "story": 0.0}
-CATEGORIES = ["politics", "culture", "economy", "world", "border"]
+CATEGORIES = ["politics", "culture", "economy", "world", "border", "crime"]
 SITE = os.environ.get("SITE_URL", "https://patriotdailyalerts.com").rstrip("/")
 
 SYSTEM = """You write news stories for Patriot Daily Alerts, a conservative American news site read by patriotic, mostly older Americans who distrust the legacy media. Voice: confident, plain-spoken, concrete, a little wry; the perspective is conservative but the reporting is straight. Every story is ORIGINAL WRITING built from the facts in the research notes. Never copy or closely paraphrase another outlet's sentences; do not reproduce more than two short quotes from any one source; quote public figures only in the exact words the notes give. Never invent facts, numbers, quotes or names. If the notes flag something as unconfirmed, say so in the story. Do not write about private individuals; do not accuse anyone of a crime unless a court or law enforcement has done so. No advice, no calls to action, no "share this", no exclamation points, no cliches ("bombshell", "slams", "destroys"). Attribute reporting naturally in the body, once per outlet ("Newsmax reported", "according to the Washington Examiner") and cite the primary source when there is one (the court order, the agency statement, the post on X).
 
 Format: return the body as clean HTML using only <p>, <h2>, <blockquote>, <strong>, <em>, <a href> tags. Open with a two- or three-paragraph lede that states the news and why it matters; then two to four <h2> sections with specific headings; close with a short paragraph on what happens next. 500 to 800 words. Links in the body only to primary sources and the outlets you attribute. No "Sources" section in the body (sources are a separate field). Title style, like the site's own: specific, active, one hook, no colon-and-cliche, e.g. "Vance Walks Into the Toughest Room in His Party", "One Barcode Fails, and Ten Thousand Ballots Go Back", "Congress Is Back, and the Clock Is Already Short". Excerpt: one or two sentences that stand alone in an email.
 
-Sections: politics = Washington, campaigns, Congress, the White House, courts and elections; culture = schools, faith, media, entertainment, sports, speech and social issues; economy = prices, jobs, energy, taxes, markets, the Fed, trade; world = foreign affairs, wars, allies and adversaries; border = immigration, the border, ICE, cartels, crime tied to them. Pick the section by the story's subject, not by who is speaking (a Treasury secretary talking about oil prices is economy; a mayor and a 9/11 ceremony is politics; a police charity dropping a singer is culture)."""
+Sections: politics = Washington, campaigns, Congress, the White House, courts and elections; culture = schools, faith, media, entertainment, sports, speech and social issues; economy = prices, jobs, energy, taxes, markets, the Fed, trade; world = foreign affairs, wars, allies and adversaries; border = immigration, the border, ICE, cartels; crime = murders, trials, verdicts, police, manhunts and the cases the country is watching (sports, celebrities and royals go in culture). Pick the section by the story's subject, not by who is speaking (a Treasury secretary talking about oil prices is economy; a mayor and a 9/11 ceremony is politics; a police charity dropping a singer is culture)."""
 
 SCHEMA = {
     "type": "object", "additionalProperties": False,
@@ -248,7 +248,7 @@ def revise(client, art, verdict, notes=""):
             "; keep the voice, length and structure; keep HTML to <p>, <h2>, <blockquote>, <strong>, <em>, <a href>. "
             "Also set the section (politics = Washington, campaigns, Congress, courts, elections; culture = schools, faith, media, entertainment, "
             "sports, speech, social issues; economy = prices, jobs, energy, taxes, markets, the Fed, trade; world = foreign affairs and wars; "
-            "border = immigration, ICE, cartels) by the story's subject. Return JSON.\n\n"
+            "border = immigration, ICE, cartels; crime = murders, trials, police, manhunts) by the story's subject. Return JSON.\n\n"
             f"=== EDITOR ISSUES ===\n- {issues}\n\n" + (f"=== RESEARCH NOTES ===\n{notes}\n\n" if notes else "") +
             f"=== DRAFT ===\nTitle: {art['title']}\nExcerpt: {art['excerpt']}\n\n{art['body_html']}")
     msg = stream_text(client, model=EDITOR_MODEL, max_tokens=20000, system=SYSTEM, messages=[{"role": "user", "content": user}],

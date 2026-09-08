@@ -15,6 +15,7 @@ DEFAULT_CATEGORIES = [
     ("economy", "Economy", "Jobs, prices, taxes, markets and your money."),
     ("world", "World", "America's friends and enemies abroad."),
     ("border", "Border", "Immigration, the border and law enforcement."),
+    ("crime", "Crime", "Courts, cops, killers and the cases the country is watching."),
 ]
 
 

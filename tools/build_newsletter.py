@@ -159,6 +159,57 @@ def poll_question(leads, campaign):
     return f"{lead['title']} — right call or wrong call?"[:300], ["Right call", "Wrong call", "Not sure"]
 
 
+SUBJECT_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["subject", "teaser"],
+                  "properties": {"subject": {"type": "string"}, "teaser": {"type": "string"}}}
+
+SUBJECT_RULES = (
+    "You write email subject lines for a conservative American news daily, in the style of Middle America News.\n"
+    "Formula: [the specific event, naming the person or institution] then a dash or colon and [the consequence, reaction, or withheld detail]. "
+    "8 to 13 words, 55 to 90 characters. Present tense, strong active verbs (Draws the Line, Steps Off, Drops, Blocks, Erupts). "
+    "Exactly ONE word in ALL CAPS, placed on the key verb or adjective (choose from: BREAKING, BOMBSHELL, EXPOSED, BLOCKS, FIRED, SILENT, "
+    "MASSIVE, SHOCKING, DEVASTATING, URGENT, STUNNING, REFUSES, WARNS). Name the who; hold back one concrete detail to create curiosity "
+    "(e.g. 'Names Two Americans', 'His Own Minister Refuses', 'Wait Until You Hear Why'). Heroes and villains are fine when the story supports them. "
+    "Hard rules: every claim must be true to the story text below - never promise something the story does not contain; no question marks; "
+    "no numbers unless they are in the story; no emojis; no quotation marks; do not start with the ALL-CAPS word more than one time in three.\n"
+    "Examples of the target style: 'Trump Drops MASSIVE Cash Bomb Into Red State Senate Race - Democrats in Desperation Mode' / "
+    "'Minnesota Court BLOCKS Patriot's Demand for Vote Recount After Disturbing Irregularities Surface' / "
+    "'Netanyahu Orders Settler Outposts Torn Down - His Own Minister REFUSES'.\n"
+    "Return JSON: subject = the subject line for STORY 1; teaser = a line in the same style for STORY 2 (it is shown after the word 'and' as inbox preview text, so do not start it with 'and')."
+)
+
+
+def email_subject(leads, campaign):
+    """Middle America News-style subject (lead) and preheader teaser (second story); falls back to the story titles."""
+    fallback = (leads[0]["title"], leads[1]["title"] if len(leads) > 1 else CONFIG["tagline"])
+    if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
+        return fallback
+    import re as _re
+
+    def story(p, n):
+        body = _re.sub(r"<[^>]+>", " ", p.get("body_html") or "")
+        body = _re.sub(r"\s+", " ", html.unescape(body)).strip()[:1800]
+        return f"STORY {n}\nHeadline: {p['title']}\nSummary: {p.get('excerpt', '')}\nText: {body}"
+
+    try:
+        import anthropic
+
+        client = anthropic.Anthropic(max_retries=3)
+        msg = client.messages.create(
+            model=os.environ.get("EDITOR_MODEL", "claude-sonnet-5"), max_tokens=300,
+            output_config={"effort": "low", "format": {"type": "json_schema", "schema": SUBJECT_SCHEMA}},
+            system=SUBJECT_RULES,
+            messages=[{"role": "user", "content": story(leads[0], 1) + ("\n\n" + story(leads[1], 2) if len(leads) > 1 else "")}])
+        if msg.stop_reason == "end_turn":
+            data = json.loads(next(b.text for b in msg.content if b.type == "text"))
+            subject = data.get("subject", "").strip().strip('"')
+            teaser = data.get("teaser", "").strip().strip('"')
+            if 40 <= len(subject) <= 110:
+                return subject[:120], (teaser[:120] if len(teaser) >= 20 else fallback[1])
+    except Exception as exc:  # noqa: BLE001
+        print(f"subject line generation failed ({exc}); using story titles")
+    return fallback
+
+
 def create_poll(token, campaign, question, options):
     r = requests.post(f"{SITE}/api/polls", json={"campaign": campaign, "question": question, "options": options},
                       headers={"Authorization": f"Bearer {token}", "User-Agent": "Mozilla/5.0"}, timeout=30)
@@ -184,9 +235,9 @@ def poll_block(poll):
 <tr><td style="padding:8px 25px 22px;font-family:{FONT};font-size:12px;color:{GREY};text-align:center;">Tap an answer to vote. <a href="{esc(poll["results_url"])}" target="_blank" style="color:{GREY};text-decoration:underline;">See the results so far</a>.</td></tr>'''
 
 
-def render(leads, trending, edition, date_et, campaign, view_url, poll=None):
-    subject = leads[0]["title"]
-    preheader = f"and {leads[1]['title']}" if len(leads) > 1 else CONFIG["tagline"]
+def render(leads, trending, edition, date_et, campaign, view_url, poll=None, subject_line=None):
+    subject, teaser = subject_line or (leads[0]["title"], leads[1]["title"] if len(leads) > 1 else CONFIG["tagline"])
+    preheader = f"and {teaser}" if len(leads) > 1 else CONFIG["tagline"]
     pad = "&#8204;&nbsp;" * 90  # keeps inbox previews from pulling in body text after the preheader
     stories = "".join(story_block(p, campaign) for p in leads)
     blocks = stories
@@ -266,7 +317,9 @@ def main():
                 print(f"  poll: {poll['question']} ({' / '.join(poll['options'])})")
             except requests.RequestException as exc:
                 print(f"  poll skipped: {exc}")
-    subject, preheader, body, text = render(leads, trending, edition, date_et, campaign, view_url, poll)
+    subject_line = email_subject(leads, campaign)
+    print(f"  subject: {subject_line[0]}\n  teaser:  and {subject_line[1]}")
+    subject, preheader, body, text = render(leads, trending, edition, date_et, campaign, view_url, poll, subject_line)
     OUT.mkdir(parents=True, exist_ok=True)
     STATIC.mkdir(parents=True, exist_ok=True)
     (OUT / f"{campaign}.html").write_text(body, encoding="utf-8")

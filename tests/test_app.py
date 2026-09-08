@@ -131,7 +131,7 @@ def test_www_redirects_to_bare_domain(client):
 def test_five_sections_exist(client):
     from src.models import Category
 
-    assert {c.slug for c in Category.query.all()} >= {"politics", "culture", "economy", "world", "border"}
+    assert {c.slug for c in Category.query.all()} >= {"politics", "culture", "economy", "world", "border", "crime"}
     assert b"/category/border/" in client.get("/").data
 
 
@@ -193,7 +193,7 @@ def test_categories_exist_even_without_auto_seed():
 
         app = create_app(NoSeed)
         with app.app_context():
-            assert Category.query.count() == 5 and Post.query.count() == 0
+            assert Category.query.count() == 6 and Post.query.count() == 0
     finally:
         os.environ.pop("AUTO_SEED", None)
 

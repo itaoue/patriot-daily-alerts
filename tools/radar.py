@@ -46,6 +46,8 @@ SOURCES = {
     "Daily Caller": ("https://dailycaller.com/feed/", "dailycaller.com"),
     "The Federalist": ("https://thefederalist.com/feed/", "thefederalist.com"),
     "Just the News": ("https://justthenews.com/rss.xml", "justthenews.com"),
+    "Fox News US": ("https://moxie.foxnews.com/google-publisher/us.xml", "foxnews.com/us"),   # crime, courts, culture
+    "New York Post News": ("https://nypost.com/news/feed/", "nypost.com/news"),
 }
 PEOPLE = [
     "Donald Trump", "JD Vance", "Elon Musk", "Mike Johnson", "John Thune", "Chuck Schumer", "Hakeem Jeffries",
@@ -55,9 +57,10 @@ PEOPLE = [
 ]
 CATEGORIES = {  # category -> title regex (first match wins, politics is the default)
     "border": r"\b(border|immigra\w*|ice\b|deport\w*|migrant\w*|asylum|cartel\w*|sanctuary|illegal alien\w*|cbp)\b",
+    "crime": r"\b(murder\w*|kill\w*|homicide|shooting|shot dead|stabb\w*|manhunt|arrest\w*|charged with|indict\w*|sentenc\w*|death penalty|verdict|jury|juror|trial|mistrial|convict\w*|guilty|fugitive|kidnap\w*|assault\w*|police officer|cops?\b|sheriff|suspect|inmate|prison|carjack\w*|robber\w*)\b",
     "economy": r"\b(econom\w*|inflation|tariff\w*|jobs?\b|unemployment|fed\b|interest rate\w*|tax\w*|stock\w*|market\w*|prices?|gas price\w*|budget|deficit|debt|dollar|wall street|gdp|recession|social security|medicare)\b",
     "world": r"\b(iran|israel|gaza|hamas|ukraine|russia|putin|zelensky|china|taiwan|xi\b|nato|north korea|venezuela|mexico|europe|uk\b|britain|canada|foreign|war\b|strike\w* on|troops|military|pentagon)\b",
-    "culture": r"\b(school\w*|teacher\w*|college\w*|universit\w*|campus|woke|dei\b|trans\w*|gender|church\w*|christian\w*|faith|hollywood|celebrit\w*|nfl|nba|espn|olympic\w*|abortion|pro-life|gun\w*|second amendment|censor\w*|free speech|media|cnn|msnbc|nbc|abc news|new york times|disney|netflix|late night|kimmel|colbert)\b",
+    "culture": r"\b(school\w*|teacher\w*|college\w*|universit\w*|campus|woke|dei\b|trans\w*|gender|church\w*|christian\w*|faith|hollywood|celebrit\w*|nfl|nba|mlb|wnba|ncaa|espn|umpire|referee|quarterback|coach|mascot|super bowl|world series|olympic\w*|royal\w*|king charles|prince|princess|game show|reality tv|netflix|disney|abortion|pro-life|gun\w*|second amendment|censor\w*|free speech|media|cnn|msnbc|nbc|abc news|new york times|disney|netflix|late night|kimmel|colbert)\b",
 }
 STOP = set("the a an and or of to in on for with by at from as is are was were be been this that these those it its into over after before about against amid"
            " says said say new just how why what who will would could should can may might his her their our your than then them they he she we you not no"
