@@ -35,6 +35,7 @@ jobs:
       - name: Build issue
         id: build
         run: |
+          set -o pipefail
           ED="${{ github.event.inputs.edition }}"
           python tools/build_newsletter.py ${ED:+--edition $ED} | tee build.log
           echo "campaign=$(ls -t dist/newsletters/*.json | head -1 | xargs -n1 basename | sed 's/.json$//')" >> "$GITHUB_OUTPUT"
