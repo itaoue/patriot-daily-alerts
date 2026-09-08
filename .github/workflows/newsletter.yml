@@ -24,12 +24,14 @@ jobs:
       BIGMAILER_API_KEY: ${{ secrets.BIGMAILER_API_KEY }}
       BIGMAILER_BRAND_ID: ${{ secrets.BIGMAILER_BRAND_ID }}
       BIGMAILER_LIST_ID: ${{ secrets.BIGMAILER_LIST_ID }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # for the daily poll question
+      EDITOR_MODEL: ${{ vars.EDITOR_MODEL || 'claude-sonnet-5' }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-      - run: pip install requests==2.32.4
+      - run: pip install -r requirements-content.txt
       - name: Build issue
         id: build
         run: |

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Poll results: {{ poll.question }} — {{ site_name }}{% endblock %}
+{% block description %}{{ poll.question }} See how {{ site_name }} readers voted.{% endblock %}
+{% block content %}
+<div class="mh-row">
+  <section class="mh-content">
+    <article class="poll">
+      <p class="kicker">Reader poll</p>
+      {% if just_voted %}<p class="alert alert--ok">Thank you for taking the poll. Your response has been counted.</p>{% endif %}
+      <h1 class="entry-title">{{ poll.question }}</h1>
+      <div class="poll__results">
+        {% for r in results %}
+        <div class="poll__row{{ ' is-mine' if voted is not none and voted|string == r.index|string }}">
+          <div class="poll__label"><span>{{ r.label }}</span><strong>{{ r.pct }}%</strong></div>
+          <div class="poll__bar"><div style="width:{{ r.pct }}%"></div></div>
+        </div>
+        {% endfor %}
+      </div>
+      <p class="poll__total">{{ '{:,}'.format(total) }} vote{{ '' if total == 1 else 's' }} so far.</p>
+      {% if voted is none %}
+      <div class="poll__vote">
+        <p><strong>Haven’t voted yet?</strong></p>
+        {% for r in results %}<a class="btn" href="{{ url_for('public.poll_vote', poll_id=poll.id, choice=r.index) }}">{{ r.label }}</a> {% endfor %}
+      </div>
+      {% endif %}
+      {% if sponsor and sponsor.enabled %}
+      <div class="inline-signup">
+        <p class="kicker">{{ sponsor.label }}</p>
+        <h3>{{ sponsor.headline }}</h3>
+        <a class="btn" href="{{ sponsor.url }}" rel="nofollow sponsored">{{ sponsor.cta }}</a>
+      </div>
+      {% endif %}
+      {% if latest %}
+      <section class="mh-related">
+        <h2 class="mh-widget-title">Today's stories</h2>
+        <div class="grid grid--2">
+          {% for p in latest %}{% with post=p, variant='grid' %}{% include "partials/_card.html" %}{% endwith %}{% endfor %}
+        </div>
+      </section>
+      {% endif %}
+    </article>
+  </section>
+  {% include "partials/_sidebar.html" %}
+</div>
+{% endblock %}

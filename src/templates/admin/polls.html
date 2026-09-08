@@ -1,0 +1,14 @@
+{% extends "admin/base.html" %}
+{% block title %}Polls{% endblock %}
+{% block content %}
+<h1>Polls</h1>
+<p>One poll per newsletter issue, created automatically when the issue is built. Readers vote from the email; results pages are public.</p>
+{% for poll, results, total in polls %}
+<article class="msg">
+  <header><b>{{ poll.question }}</b> · {{ poll.campaign or 'manual' }} · {{ poll.created_at|date }} · {{ total }} votes · <a href="{{ url_for('public.poll_results', poll_id=poll.id) }}" target="_blank">results page ↗</a></header>
+  <table style="margin-top:8px"><tbody>
+    {% for r in results %}<tr><td style="width:60%">{{ r.label }}</td><td>{{ r.votes }}</td><td>{{ r.pct }}%</td></tr>{% endfor %}
+  </tbody></table>
+</article>
+{% else %}<p>No polls yet.</p>{% endfor %}
+{% endblock %}

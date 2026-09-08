@@ -114,7 +114,64 @@ def sponsor_block(s):
 <tr><td style="padding:0 25px;"><div style="border-top:1px solid {RULE};font-size:0;line-height:0;">&nbsp;</div></td></tr>'''
 
 
-def render(leads, trending, edition, date_et, campaign, view_url):
+POLL_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["question", "options"],
+               "properties": {"question": {"type": "string"}, "options": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 3}}}
+
+
+def poll_question(leads, campaign):
+    """One reader-poll question for the issue: Claude (Sonnet 5) from the lead stories, else a rotating fallback."""
+    cfg = CONFIG.get("poll") or {}
+    if os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"):
+        try:
+            import anthropic
+
+            client = anthropic.Anthropic(max_retries=3)
+            heads = "\n".join(f"- {p['title']}: {p.get('excerpt', '')}" for p in leads)
+            msg = client.messages.create(
+                model=os.environ.get("EDITOR_MODEL", "claude-sonnet-5"), max_tokens=400, output_config={"effort": "low", "format": {"type": "json_schema", "schema": POLL_SCHEMA}},
+                messages=[{"role": "user", "content": (
+                    "Write one reader-poll question for a conservative American news email, based on today's lead story below. "
+                    "Plain, direct, under 16 words, answerable with 2 or 3 short options (e.g. Yes / No / Not sure). "
+                    "Ask for the reader's opinion or prediction, not a fact. Do not name private individuals.\n\n" + heads)}])
+            if msg.stop_reason == "end_turn":
+                data = json.loads(next(b.text for b in msg.content if b.type == "text"))
+                if data.get("question") and len(data.get("options", [])) >= 2:
+                    return data["question"][:300], [o[:120] for o in data["options"][:3]]
+        except Exception as exc:  # noqa: BLE001 - never block the issue on the poll
+            print(f"poll question generation failed ({exc}); using fallback")
+    fb = cfg.get("fallback") or []
+    if not fb:
+        return None, None
+    pick = fb[sum(ord(ch) for ch in campaign) % len(fb)]
+    return pick["question"], pick["options"]
+
+
+def create_poll(token, campaign, question, options):
+    r = requests.post(f"{SITE}/api/polls", json={"campaign": campaign, "question": question, "options": options},
+                      headers={"Authorization": f"Bearer {token}", "User-Agent": "Mozilla/5.0"}, timeout=30)
+    r.raise_for_status()
+    return r.json()
+
+
+def poll_block(poll):
+    if not poll:
+        return ""
+    heading = (CONFIG.get("poll") or {}).get("heading", "Today's Poll")
+    buttons = "".join(
+        f'<tr><td align="center" style="padding:5px 25px;"><table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0"><tr>'
+        f'<td align="center" bgcolor="{PAPER}" style="border:2px solid {NAVY};border-radius:3px;padding:11px 14px;">'
+        f'<a href="{esc(u)}?utm_source=newsletter&utm_medium=email&utm_campaign=poll" target="_blank" style="display:block;font-family:{FONT};font-size:17px;font-weight:700;color:{NAVY};text-decoration:none;">{esc(label)}</a>'
+        f'</td></tr></table></td></tr>'
+        for label, u in zip(poll["options"], poll["vote_urls"], strict=False))
+    return f'''
+<tr><td style="padding:22px 25px 4px;font-family:{FONT};font-size:20px;line-height:120%;font-weight:700;color:{INK};text-transform:uppercase;letter-spacing:.04em;text-align:center;">
+  <span style="border-bottom:3px solid {RED};padding-bottom:4px;">{esc(heading)}</span></td></tr>
+<tr><td style="padding:14px 25px 8px;font-family:{FONT};font-size:22px;line-height:125%;font-weight:700;color:{INK};text-align:center;">{esc(poll["question"])}</td></tr>
+{buttons}
+<tr><td style="padding:8px 25px 22px;font-family:{FONT};font-size:12px;color:{GREY};text-align:center;">Tap an answer to vote. <a href="{esc(poll["results_url"])}" target="_blank" style="color:{GREY};text-decoration:underline;">See the results so far</a>.</td></tr>'''
+
+
+def render(leads, trending, edition, date_et, campaign, view_url, poll=None):
     subject = leads[0]["title"]
     preheader = f"and {leads[1]['title']}" if len(leads) > 1 else CONFIG["tagline"]
     pad = "&#8204;&nbsp;" * 90  # keeps inbox previews from pulling in body text after the preheader
@@ -150,6 +207,7 @@ def render(leads, trending, edition, date_et, campaign, view_url):
 
   {blocks}
   {trending_block(trending, campaign)}
+  {poll_block(poll)}
 
   <tr><td bgcolor="#f1f1f1" style="background:#f1f1f1;padding:22px 25px;font-family:{FONT};font-size:12px;line-height:150%;color:{GREY};text-align:center;">
     <p style="margin:0 0 10px;">{esc(CONFIG["about"])}</p>
@@ -163,6 +221,7 @@ def render(leads, trending, edition, date_et, campaign, view_url):
     text = (f"{CONFIG['from_name']} - {date_et.strftime('%A, %B %d, %Y')}\n\n"
             + "\n\n".join(f"{p['title']}\n{link(p, campaign)}" for p in leads)
             + ("\n\nALSO TRENDING\n" + "\n".join(f"- {p['title']}\n  {link(p, campaign)}" for p in trending) if trending else "")
+            + (f"\n\nTODAY'S POLL: {poll['question']}\n" + "\n".join(f"- {o}: {u}" for o, u in zip(poll["options"], poll["vote_urls"], strict=False)) if poll else "")
             + f"\n\nUnsubscribe: *|UNSUB|*\n{CONFIG['postal_address']}\n")
     return subject, preheader, body, text
 
@@ -185,13 +244,23 @@ def main():
     leads, trending = pick(posts, a.hours, CONFIG.get("leads", 3), CONFIG.get("trending", 6))
     if not leads:
         sys.exit("no published stories to send")
-    subject, preheader, body, text = render(leads, trending, edition, date_et, campaign, view_url)
+    poll = None
+    if (CONFIG.get("poll") or {}).get("enabled", True):
+        question, options = poll_question(leads, campaign)
+        if question:
+            try:
+                poll = create_poll(a.token, campaign, question, options)
+                print(f"  poll: {poll['question']} ({' / '.join(poll['options'])})")
+            except requests.RequestException as exc:
+                print(f"  poll skipped: {exc}")
+    subject, preheader, body, text = render(leads, trending, edition, date_et, campaign, view_url, poll)
     OUT.mkdir(parents=True, exist_ok=True)
     STATIC.mkdir(parents=True, exist_ok=True)
     (OUT / f"{campaign}.html").write_text(body, encoding="utf-8")
     (OUT / f"{campaign}.txt").write_text(text, encoding="utf-8")
     (OUT / f"{campaign}.json").write_text(json.dumps({"campaign": campaign, "edition": edition, "subject": subject, "preheader": preheader,
-                                                       "leads": [p["slug"] for p in leads], "trending": [p["slug"] for p in trending]}, indent=1))
+                                                       "leads": [p["slug"] for p in leads], "trending": [p["slug"] for p in trending],
+                                                       "poll": poll and {"id": poll["id"], "question": poll["question"]}}, indent=1))
     shutil.copy(OUT / f"{campaign}.html", STATIC / f"{campaign}.html")
     print(f"{campaign}: subject '{subject}' | preheader '{preheader}'")
     for p in leads:

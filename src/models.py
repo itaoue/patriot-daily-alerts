@@ -95,3 +95,39 @@ class Setting(db.Model):
     __tablename__ = "settings"
     key = db.Column(db.String(80), primary_key=True)
     value = db.Column(db.Text, default="")
+
+
+class Poll(db.Model):
+    """A one-question reader poll, usually created by the newsletter builder for that day's issue."""
+
+    __tablename__ = "polls"
+    id = db.Column(db.Integer, primary_key=True)
+    campaign = db.Column(db.String(40), default="", index=True)  # newsletter issue id, e.g. 2026-09-08-daily
+    question = db.Column(db.String(300), nullable=False)
+    options = db.Column(db.Text, nullable=False)  # JSON list of option labels
+    created_at = db.Column(db.DateTime, default=utcnow)
+    votes = db.relationship("PollVote", back_populates="poll", lazy="dynamic", cascade="all, delete-orphan")
+
+    @property
+    def option_list(self) -> list:
+        import json
+
+        return json.loads(self.options or "[]")
+
+    def results(self) -> list:
+        from sqlalchemy import func
+
+        counts = dict(db.session.query(PollVote.choice, func.count()).filter(PollVote.poll_id == self.id).group_by(PollVote.choice).all())
+        total = sum(counts.values())
+        return [{"index": i, "label": label, "votes": counts.get(i, 0), "pct": round(100 * counts.get(i, 0) / total) if total else 0}
+                for i, label in enumerate(self.option_list)]
+
+
+class PollVote(db.Model):
+    __tablename__ = "poll_votes"
+    id = db.Column(db.Integer, primary_key=True)
+    poll_id = db.Column(db.Integer, db.ForeignKey("polls.id"), nullable=False, index=True)
+    poll = db.relationship("Poll", back_populates="votes")
+    choice = db.Column(db.Integer, nullable=False)
+    voter = db.Column(db.String(64), default="", index=True)  # sha256 of ip+ua, truncated; one vote per voter per poll
+    created_at = db.Column(db.DateTime, default=utcnow)

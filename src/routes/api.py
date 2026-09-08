@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import requests
 from flask import Blueprint, current_app, jsonify, redirect, render_template, request, url_for
 
-from src.models import Category, ContactMessage, Post, Subscriber, db, utcnow
+from src.models import Category, ContactMessage, Poll, Post, Subscriber, db, utcnow
 from src.utils import make_excerpt, sanitize_html, slugify, valid_email
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -168,3 +168,36 @@ def publish():
     db.session.commit()
     return jsonify(ok=True, id=post.id, slug=post.slug, status=post.status, url=post.url,
                    admin_url=url_for("admin.edit_post", post_id=post.id)), (200 if existing else 201)
+
+
+@api_bp.route("/polls", methods=["POST"])
+def create_poll():
+    """Create the day's poll (used by the newsletter builder). Returns the vote/results URLs."""
+    if not _pipeline_authorized():
+        return jsonify(error="unauthorized"), 401
+    data = request.get_json(silent=True) or {}
+    question = (data.get("question") or "").strip()[:300]
+    options = [str(o).strip()[:120] for o in (data.get("options") or []) if str(o).strip()][:4]
+    if not question or len(options) < 2:
+        return jsonify(ok=False, error="question and 2-4 options are required"), 400
+    campaign = (data.get("campaign") or "")[:40]
+    poll = Poll.query.filter_by(campaign=campaign).first() if campaign else None
+    if poll and not data.get("update"):
+        pass  # same issue rebuilt: reuse the existing poll so links stay stable
+    else:
+        poll = poll or Poll(campaign=campaign)
+        poll.question, poll.options = question, json.dumps(options)
+        db.session.add(poll)
+        db.session.commit()
+    site = current_app.config["SITE_URL"]
+    return jsonify(ok=True, id=poll.id, question=poll.question, options=poll.option_list,
+                   results_url=f"{site}{url_for('public.poll_results', poll_id=poll.id)}",
+                   vote_urls=[f"{site}{url_for('public.poll_vote', poll_id=poll.id, choice=i)}" for i in range(len(poll.option_list))])
+
+
+@api_bp.route("/polls/<int:poll_id>")
+def poll_results_api(poll_id):
+    if not _pipeline_authorized():
+        return jsonify(error="unauthorized"), 401
+    poll = Poll.query.get_or_404(poll_id)
+    return jsonify(id=poll.id, campaign=poll.campaign, question=poll.question, results=poll.results(), total=poll.votes.count())

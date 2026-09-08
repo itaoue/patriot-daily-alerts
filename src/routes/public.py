@@ -4,7 +4,7 @@ from datetime import timedelta
 from flask import Blueprint, Response, abort, current_app, redirect, render_template, request, send_from_directory, session, url_for
 from sqlalchemy import or_
 
-from src.models import Category, Page, Post, db, utcnow
+from src.models import Category, Page, Poll, PollVote, Post, db, utcnow
 from src.utils import strip_tags
 
 public_bp = Blueprint("public", __name__)
@@ -114,6 +114,39 @@ def sitemap():
 def robots():
     body = f"User-agent: *\nDisallow: /admin/\nDisallow: /api/\nSitemap: {current_app.config['SITE_URL']}/sitemap.xml\n"
     return Response(body, mimetype="text/plain")
+
+
+def _voter_id() -> str:
+    import hashlib
+
+    fwd = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+    ip = request.headers.get("CF-Connecting-IP") or fwd or request.remote_addr or ""
+    return hashlib.sha256(f"{ip}|{request.user_agent.string}".encode()).hexdigest()[:40]
+
+
+@public_bp.route("/poll/<int:poll_id>/")
+def poll_results(poll_id):
+    poll = Poll.query.get_or_404(poll_id)
+    voted = request.cookies.get(f"pv{poll.id}")
+    return render_template("poll.html", poll=poll, results=poll.results(), total=poll.votes.count(), voted=voted,
+                           just_voted=request.args.get("voted") is not None, latest=most_read(4),
+                           sponsor=current_app.config.get("POLL_SPONSOR"))
+
+
+@public_bp.route("/poll/<int:poll_id>/vote/<int:choice>/")
+def poll_vote(poll_id, choice):
+    """Links from the newsletter land here (GET, since email can't POST); one vote per browser / voter hash."""
+    poll = Poll.query.get_or_404(poll_id)
+    if choice < 0 or choice >= len(poll.option_list):
+        abort(404)
+    voter = _voter_id()
+    already = request.cookies.get(f"pv{poll.id}") or PollVote.query.filter_by(poll_id=poll.id, voter=voter).first()
+    if not already:
+        db.session.add(PollVote(poll_id=poll.id, choice=choice, voter=voter))
+        db.session.commit()
+    resp = redirect(url_for("public.poll_results", poll_id=poll.id, voted=1))
+    resp.set_cookie(f"pv{poll.id}", str(choice), max_age=60 * 60 * 24 * 90, samesite="Lax")
+    return resp
 
 
 @public_bp.route("/wp-content/uploads/<path:filename>")

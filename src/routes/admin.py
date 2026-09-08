@@ -4,7 +4,7 @@ from functools import wraps
 
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 
-from src.models import Category, ContactMessage, Page, Post, Subscriber, db, utcnow
+from src.models import Category, ContactMessage, Page, Poll, Post, Subscriber, db, utcnow
 from src.utils import make_excerpt, sanitize_html, slugify
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -201,3 +201,10 @@ def import_status():
     from src.importer import get_status
 
     return jsonify({**get_status(), "posts_in_db": Post.query.count()})
+
+
+@admin_bp.route("/polls/")
+@login_required
+def polls():
+    rows = Poll.query.order_by(Poll.created_at.desc()).limit(60).all()
+    return render_template("admin/polls.html", polls=[(p, p.results(), p.votes.count()) for p in rows])

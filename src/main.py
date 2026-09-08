@@ -34,6 +34,13 @@ def create_app(config_object=Config) -> Flask:
     app.register_blueprint(admin_bp)
     app.register_blueprint(public_bp)
 
+    try:
+        import json as _json
+
+        nl_cfg = _json.load(open(os.path.join(os.path.dirname(__file__), "..", "content", "newsletter", "config.json"), encoding="utf-8"))
+        app.config["POLL_SPONSOR"] = nl_cfg.get("sponsor")
+    except (OSError, ValueError):
+        pass
     app.jinja_env.filters["date"] = format_date
     app.jinja_env.filters["datetime"] = format_datetime
     app.jinja_env.filters["ago"] = time_ago

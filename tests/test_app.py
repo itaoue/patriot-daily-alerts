@@ -206,3 +206,25 @@ def test_publish_api_can_delete(client):
     assert client.post("/api/publish", json={"slug": "pipeline-story", "delete": True}, headers=h).get_json()["deleted"] == "pipeline-story"
     assert Post.query.filter_by(slug="pipeline-story").first() is None
     assert client.post("/api/publish", json={"slug": "pipeline-story", "delete": True}, headers=h).status_code == 404
+
+
+def test_poll_create_vote_results(client):
+    from flask import current_app
+
+    current_app.config["PUBLISH_TOKEN"] = "t0k3n"
+    h = {"Authorization": "Bearer t0k3n"}
+    r = client.post("/api/polls", json={"campaign": "2026-09-08-daily", "question": "Do you approve?", "options": ["Yes", "No"]}, headers=h)
+    assert r.status_code == 200 and len(r.get_json()["vote_urls"]) == 2
+    pid = r.get_json()["id"]
+    # rebuilding the same issue reuses the poll
+    again = client.post("/api/polls", json={"campaign": "2026-09-08-daily", "question": "x", "options": ["a", "b"]}, headers=h)
+    assert again.get_json()["id"] == pid
+    assert client.post("/api/polls", json={"question": "x", "options": ["only one"]}, headers=h).status_code == 400
+    r = client.get(f"/poll/{pid}/vote/0/")
+    assert r.status_code == 302 and r.headers["Location"].endswith(f"/poll/{pid}/?voted=1")
+    client.get(f"/poll/{pid}/vote/1/")  # same browser: not counted again
+    res = client.get(f"/api/polls/{pid}", headers=h).get_json()
+    assert res["total"] == 1 and res["results"][0]["votes"] == 1 and res["results"][0]["pct"] == 100
+    page = client.get(f"/poll/{pid}/?voted=1")
+    assert page.status_code == 200 and b"Thank you for taking the poll" in page.data and b"Do you approve?" in page.data
+    assert client.get(f"/poll/{pid}/vote/5/").status_code == 404

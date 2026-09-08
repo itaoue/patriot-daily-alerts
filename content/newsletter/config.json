@@ -12,5 +12,42 @@
     "image": "",
     "url": "https://patriotdailyalerts.com/",
     "cta": "SEE THE LIST"
+  },
+  "poll": {
+    "enabled": true,
+    "heading": "Today's Poll",
+    "fallback": [
+      {
+        "question": "Do you approve of the job President Trump is doing?",
+        "options": [
+          "Yes",
+          "No",
+          "Not sure"
+        ]
+      },
+      {
+        "question": "Is the mainstream media telling you the truth about this week's news?",
+        "options": [
+          "Yes",
+          "No"
+        ]
+      },
+      {
+        "question": "Should Congress cut spending before the next funding deadline?",
+        "options": [
+          "Yes",
+          "No",
+          "Not sure"
+        ]
+      },
+      {
+        "question": "Are you better off financially than you were a year ago?",
+        "options": [
+          "Better",
+          "Worse",
+          "About the same"
+        ]
+      }
+    ]
   }
 }

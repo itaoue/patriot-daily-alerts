@@ -146,6 +146,12 @@ h1{font-size:32px}h2{font-size:24px}h3{font-size:18px}
 .form input:focus,.form textarea:focus{outline:2px solid var(--blue)}
 .alert{padding:12px 14px;font-size:14px;margin-bottom:14px}.alert--ok{background:#e6f4ea;color:#1b5e2b}.alert--error{background:#fdeaea;color:#8e1b1b}
 
+/* poll */
+.poll .entry-title{margin-bottom:20px}
+.poll__row{margin-bottom:14px}.poll__label{display:flex;justify-content:space-between;font-size:15px;margin-bottom:5px}.poll__label strong{color:var(--red)}
+.poll__bar{height:22px;background:#eee;border-radius:3px;overflow:hidden}.poll__bar div{height:100%;background:var(--navy);min-width:2px;transition:width .4s}
+.poll__row.is-mine .poll__bar div{background:var(--red)}.poll__row.is-mine .poll__label span::after{content:" ✓ your vote";color:var(--red);font-size:12px;font-weight:700}
+.poll__total{color:var(--muted);font-size:13px;margin:6px 0 20px}.poll__vote .btn{margin:0 6px 8px 0}
 /* footer */
 .mh-footer{background:var(--nav);color:#f7f7f7}
 .mh-footer a{color:#f7f7f7}.mh-footer a:hover{color:var(--red)}
