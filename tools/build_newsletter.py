@@ -310,6 +310,7 @@ def main():
     ap.add_argument("--date", help="YYYY-MM-DD (default: today in ET)")
     ap.add_argument("--hours", type=int, default=16, help="lead stories must be published within this many hours")
     ap.add_argument("--token", default=os.environ.get("PUBLISH_TOKEN", ""))
+    ap.add_argument("--skip-if-exists", action="store_true", help="do nothing if this issue was already built (scheduled runs)")
     a = ap.parse_args()
     if not a.token:
         sys.exit("PUBLISH_TOKEN is not set")
@@ -318,6 +319,9 @@ def main():
     date_et = dt.datetime.strptime(a.date, "%Y-%m-%d").replace(tzinfo=ET) if a.date else now_et
     campaign = f"{date_et.strftime('%Y-%m-%d')}-{edition}"
     view_url = f"{SITE}/static/newsletters/{campaign}.html"
+    if a.skip_if_exists and (STATIC / f"{campaign}.html").exists():
+        print(f"{campaign}: already built earlier today, skipping")
+        return
     posts = fetch_stories(a.token)
     leads, trending = pick(posts, a.hours, CONFIG.get("leads", 3), CONFIG.get("trending", 6))
     if not leads:

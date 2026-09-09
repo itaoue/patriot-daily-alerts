@@ -43,16 +43,19 @@ jobs:
         run: |
           set -o pipefail
           ED="${{ github.event.inputs.edition }}"; DT="${{ github.event.inputs.date }}"
-          python tools/build_newsletter.py ${ED:+--edition $ED} ${DT:+--date $DT} | tee build.log
-          echo "campaign=$(ls -t dist/newsletters/*.json | head -1 | xargs -n1 basename | sed 's/.json$//')" >> "$GITHUB_OUTPUT"
+          SKIP=""; [ "${{ github.event_name }}" = "schedule" ] && SKIP="--skip-if-exists"   # a manual build earlier the same day wins
+          python tools/build_newsletter.py ${ED:+--edition $ED} ${DT:+--date $DT} $SKIP | tee build.log
+          if grep -q "already built" build.log; then echo "skip=true" >> "$GITHUB_OUTPUT"; else
+          echo "campaign=$(ls -t dist/newsletters/*.json | head -1 | xargs -n1 basename | sed 's/.json$//')" >> "$GITHUB_OUTPUT"; fi
       - name: Publish "View online" copy
+        if: steps.build.outputs.skip != 'true'
         run: |
           git config user.name "content-bot"
           git config user.email "news@patriotdailyalerts.com"
           git add src/static/newsletters
           git diff --cached --quiet || (git commit -m "Newsletter ${{ steps.build.outputs.campaign }}" && git pull --rebase origin main && git push)
       - name: Push to BigMailer
-        if: env.BIGMAILER_API_KEY != '' && github.event.inputs.push != 'false'
+        if: env.BIGMAILER_API_KEY != '' && github.event.inputs.push != 'false' && steps.build.outputs.skip != 'true'
         run: |
           READY="${{ github.event.inputs.ready }}"
           python tools/push_newsletter.py "${{ steps.build.outputs.campaign }}" $([ "$READY" = "true" ] && echo --ready)
