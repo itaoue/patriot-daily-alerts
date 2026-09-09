@@ -1,6 +1,6 @@
 /* Patriot Daily Alerts — classic MH Magazine style layout */
 :root{
-  --red:#e64946;--red-2:#c9362f;--blue:#0b4688;--nav:#222;--nav-hover:#2a2a2a;
+  --red:#e64946;--red-2:#c9362f;--blue:#0b4688;--navy:#0b4688;--nav:#222;--nav-hover:#2a2a2a;
   --bg:#f7f7f7;--white:#fff;--ink:#333;--head:#000;--muted:#979797;--line:#ebebeb;--line-2:#ddd;--input:#e7e5e6;
   --sans:"Open Sans",Helvetica,Arial,sans-serif;--max:1080px;
 }

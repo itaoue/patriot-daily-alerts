@@ -9,7 +9,7 @@ from src.utils import strip_tags, valid_email
 
 public_bp = Blueprint("public", __name__)
 
-RESERVED_SLUGS = {"admin", "api", "static", "feed", "search", "category", "sitemap.xml", "robots.txt"}
+RESERVED_SLUGS = {"admin", "api", "static", "feed", "search", "category", "sitemap.xml", "robots.txt", "join", "welcome"}
 
 
 def published_posts():
@@ -189,6 +189,51 @@ def legacy_upload(filename):
     """Serve images mirrored from the old WordPress host (tools/migrate_images.py) at their original URLs."""
     folder = os.path.join(current_app.static_folder, "uploads")
     return send_from_directory(folder, filename, max_age=60 * 60 * 24 * 365)
+
+
+# ---- subscription landing page + thank-you page --------------------------------------------
+
+UTM_KEYS = ("utm_source", "utm_medium", "utm_campaign", "utm_content")
+
+
+def _utm_from_request() -> dict:
+    return {k: (request.args.get(k) or "").strip()[:40] for k in UTM_KEYS}
+
+
+def _latest_newsletter_issue() -> str:
+    """Filename of the newest "View online" page in static/newsletters/, used as the live preview on /join/."""
+    folder = os.path.join(current_app.static_folder, "newsletters")
+    try:
+        names = sorted(n for n in os.listdir(folder) if n.endswith(".html"))
+    except OSError:
+        return ""
+    return names[-1] if names else ""
+
+
+def _landing_copy() -> dict:
+    cfg = dict(current_app.config.get("LANDING") or {})
+    variant = (cfg.get("variants") or {}).get(request.args.get("h", ""))
+    if variant:
+        cfg.update({k: v for k, v in variant.items() if v})
+    return cfg
+
+
+@public_bp.route("/join/")
+def join():
+    """Standalone subscription landing page for paid and referral traffic. Headline variant via ?h=<key>."""
+    return render_template(
+        "join.html", copy=_landing_copy(), utm=_utm_from_request(), variant=request.args.get("h", "")[:40],
+        issue=_latest_newsletter_issue(),
+    )
+
+
+@public_bp.route("/welcome/")
+def welcome():
+    """Thank-you page after a landing-page signup: add-to-contacts nudge, today's poll, share links, top stories."""
+    poll = Poll.query.order_by(Poll.created_at.desc()).first()
+    voted = request.cookies.get(f"pv{poll.id}") if poll else None
+    latest = published_posts().order_by(Post.published_at.desc()).limit(3).all()
+    return render_template("welcome.html", copy=current_app.config.get("LANDING") or {}, poll=poll, voted=voted, latest=latest)
 
 
 @public_bp.route("/remove-from-our-email-list/")

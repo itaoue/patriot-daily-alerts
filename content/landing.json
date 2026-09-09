@@ -1,0 +1,42 @@
+{
+  "_comment": "Copy for the /join/ subscription landing page and the /welcome/ thank-you page. Headline variants are selected with ?h=<key> so each ad creative can land on a matching headline.",
+  "headline": "The stories the networks won't run. In your inbox every morning and evening.",
+  "subhead": "Patriot Daily Alerts distills the day's most important news for the Real America into one two-minute email, twice a day, from a conservative perspective. No paywall. No mainstream-media filter.",
+  "cta": "Send Me the Morning Brief",
+  "reassurance": "Free. Unsubscribe anytime. We never sell your email.",
+  "form_title": "Join free in 5 seconds",
+  "variants": {
+    "border": {
+      "headline": "Get the border and immigration news Washington hopes you'll miss.",
+      "subhead": "Every morning and evening: the numbers, the court rulings and the stories from the front line, in one two-minute email from a conservative perspective."
+    },
+    "economy": {
+      "headline": "Inflation, taxes, your paycheck. The economic news the networks bury.",
+      "subhead": "Two minutes, twice a day. What Washington is doing to your wallet, explained from a conservative perspective. Free, no paywall."
+    },
+    "trump": {
+      "headline": "What President Trump did today, without the media spin.",
+      "subhead": "Morning and evening editions with the day's three biggest stories, told straight, from a conservative perspective. Free."
+    },
+    "media": {
+      "headline": "Tired of being told what to think? Read what actually happened.",
+      "subhead": "Three stories, two minutes, twice a day. Sourced, quoted and written for Americans who care about their country."
+    }
+  },
+  "stats": [
+    {"value": "2×", "label": "Morning and evening editions, every day"},
+    {"value": "3", "label": "Top stories per issue, two minutes to read"},
+    {"value": "$0", "label": "Free forever, unsubscribe with one click"}
+  ],
+  "readers": "",
+  "bullets": [
+    "The day's three biggest stories, chosen by editors who share your values",
+    "Short quotes with sources named, so you can check every claim yourself",
+    "Today's Poll: vote with one tap and see how other readers came down",
+    "Crime, border, economy, faith, culture and the stories about Real America",
+    "No autoplay video, no pop-ups, no paywall"
+  ],
+  "testimonials": [],
+  "from_email": "news@patriotdailyalerts.com",
+  "pixels_html": ""
+}

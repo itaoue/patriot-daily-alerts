@@ -158,7 +158,22 @@ def edit_page(page_id):
 def subscribers():
     page = max(1, request.args.get("page", 1, type=int))
     pagination = Subscriber.query.order_by(Subscriber.created_at.desc()).paginate(page=page, per_page=50, error_out=False)
-    return render_template("admin/subscribers.html", pagination=pagination)
+    return render_template("admin/subscribers.html", pagination=pagination, by_source=_signups_by_source())
+
+
+def _signups_by_source(days: int = 30) -> list:
+    """Per-source counts (landing:taboola:border etc.) so each acquisition channel's cost per subscriber can be worked out."""
+    from datetime import timedelta
+
+    from sqlalchemy import func
+
+    since = utcnow() - timedelta(days=days)
+    counts = db.session.query(Subscriber.source, func.count()).group_by(Subscriber.source)
+    total = dict(counts.all())
+    active = dict(counts.filter(Subscriber.unsubscribed_at.is_(None)).all())
+    recent = dict(counts.filter(Subscriber.created_at >= since).all())
+    rows = [{"source": src or "site", "total": n, "active": active.get(src, 0), "recent": recent.get(src, 0)} for src, n in total.items()]
+    return sorted(rows, key=lambda r: (-r["recent"], -r["total"]))
 
 
 @admin_bp.route("/subscribers/export.csv")

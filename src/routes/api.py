@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import secrets
 from datetime import datetime, timedelta
 
@@ -37,12 +38,27 @@ def health():
     return jsonify(status="ok", time=utcnow().isoformat())
 
 
+def _signup_source(data) -> str:
+    """`source` plus UTM source/campaign, e.g. "landing:taboola:border", so the CSV export shows what each channel cost."""
+    parts = [(data.get("source") or "site")[:40]]
+    parts += [(data.get(k) or "").strip()[:20] for k in ("utm_source", "utm_campaign")]
+    joined = ":".join(p for p in parts if p).lower()
+    return re.sub(r"[^a-z0-9_:.-]", "", joined)[:80] or "site"
+
+
+def _safe_next(data) -> str:
+    """Relative path to redirect to after signup (the landing page sends /welcome/). Never an external URL."""
+    nxt = (data.get("next") or "").strip()
+    return nxt if nxt.startswith("/") and not nxt.startswith("//") and "\\" not in nxt else ""
+
+
 @api_bp.route("/subscribe", methods=["POST"])
 def subscribe():
     data = request.get_json(silent=True) or request.form
     email = (data.get("email") or "").strip().lower()
+    nxt = _safe_next(data)
     if data.get("website"):  # honeypot field filled by bots
-        return jsonify(ok=True)
+        return jsonify(ok=True, next=nxt) if _wants_json() else redirect(nxt or "/")
     if not valid_email(email):
         if _wants_json():
             return jsonify(ok=False, error="Please enter a valid email address."), 400
@@ -51,11 +67,13 @@ def subscribe():
     if sub:
         sub.unsubscribed_at = None
     else:
-        db.session.add(Subscriber(email=email, source=(data.get("source") or "site")[:80]))
+        db.session.add(Subscriber(email=email, source=_signup_source(data)))
     db.session.commit()
     _push_bigmailer(email)
     if _wants_json():
-        return jsonify(ok=True)
+        return jsonify(ok=True, next=nxt)
+    if nxt:
+        return redirect(nxt)
     return render_template("subscribed.html", ok=True, email=email)
 
 

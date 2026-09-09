@@ -117,6 +117,17 @@ python tools/write_stories.py --dry-run   # 看会选哪几篇
 python tools/write_stories.py --count 1   # 真写一篇进草稿
 ```
 
+## 订阅落地页 `/join/` 与感谢页 `/welcome/`
+
+给付费流量（Taboola / Outbrain / Facebook）和转发引流用的独立页面，不带站点导航，唯一出口就是订阅表单。
+
+- **文案**在 `content/landing.json` 里改：主标题、副标题、按钮、信任数字、卖点列表、读者证言（`testimonials` 为空时该区块隐藏，请只填真实读者的话）。`readers` 填了才显示读者数。
+- **标题变体**：`/join/?h=border`、`?h=economy`、`?h=trump`、`?h=media`，让广告标题和落地页首屏说同一件事；在 `variants` 里增删。
+- **来源追踪**：页面把 URL 上的 `utm_*` 写进隐藏字段，订阅者的 `source` 存为 `landing:<utm_source>:<utm_campaign>`，后台 Subscribers 页顶部按来源统计近 30 天 / 有效 / 全部签约数，用渠道花费除一下就是单个订阅成本。转发链接统一带 `utm_source=referral`。
+- **预览**：页面中间的手机框内嵌最新一期 `src/static/newsletters/*.html`，也就是读者会收到的真实邮件。
+- **感谢页**：提示加联系人（`from_email` 填了会显示具体地址）、当天投票、短信 / 邮件 / Facebook / X / Truth Social / Telegram 分享、今日头条。页面 `noindex`。
+- **转化事件**：表单提交触发 GA4 `newsletter_signup`，感谢页触发 `sign_up`；Taboola / Facebook 像素代码放进 `pixels_html`，只在这两个页面加载。
+
 ## 邮件 Newsletter
 
 版式照搬 Middle America News 的早晚报：600px 单栏、logo 页头、深蓝的“edition + 日期”条、三条头条（大标题链接 + 全宽配图 + 红色 READ MORE 按钮）、Also Trending 标题列表、可选 SPONSORED 广告位、灰色页脚（退订、隐私、邮政地址、免责声明）。

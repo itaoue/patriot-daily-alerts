@@ -1,0 +1,87 @@
+{% extends "landing_base.html" %}
+{% block title %}Get the Morning Brief — {{ site_name }}{% endblock %}
+{% block description %}{{ copy.subhead }}{% endblock %}
+{% block canonical %}/join/{% endblock %}
+{% block body_class %}lp-body--join{% endblock %}
+
+{% macro signup(source_id, title=None) %}
+<div class="lp-form" id="form-{{ source_id }}">
+  {% if title %}<h2>{{ title }}</h2>{% endif %}
+  <form class="subscribe-form" action="{{ url_for('api.subscribe') }}" method="post" data-subscribe>
+    <input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+    <input type="hidden" name="source" value="landing">
+    <input type="hidden" name="next" value="/welcome/">
+    {% for k, v in utm.items() %}{% if v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
+    {% if variant %}<input type="hidden" name="utm_content" value="{{ variant }}">{% endif %}
+    <label class="sr-only" for="email-{{ source_id }}">Email address</label>
+    <input id="email-{{ source_id }}" type="email" name="email" placeholder="Your email address" autocomplete="email" inputmode="email" required>
+    <button class="subscribe-form__btn" type="submit">{{ copy.cta }}</button>
+    <p class="subscribe-form__msg" role="status" aria-live="polite"></p>
+  </form>
+  <p class="lp-form__fine">{{ copy.reassurance }}</p>
+</div>
+{% endmacro %}
+
+{% block content %}
+<section class="lp-hero" id="top">
+  <div class="lp-hero__inner">
+    <div class="lp-hero__copy">
+      <p class="lp-eyebrow">Free daily email · Morning &amp; evening</p>
+      <h1>{{ copy.headline }}</h1>
+      <p class="lp-hero__sub">{{ copy.subhead }}</p>
+      {% if copy.readers %}<p class="lp-hero__readers"><strong>{{ copy.readers }}</strong> Americans already read it.</p>{% endif %}
+    </div>
+    {{ signup('hero', copy.form_title) }}
+  </div>
+</section>
+
+{% if copy.stats %}
+<section class="lp-stats" aria-label="At a glance">
+  {% for s in copy.stats %}<div class="lp-stat"><strong>{{ s.value }}</strong><span>{{ s.label }}</span></div>{% endfor %}
+</section>
+{% endif %}
+
+<section class="lp-preview">
+  <div class="lp-preview__inner">
+    <div class="lp-phone" aria-hidden="true">
+      <div class="lp-phone__notch"></div>
+      {% if issue %}
+      <iframe class="lp-phone__screen" src="{{ url_for('static', filename='newsletters/' ~ issue) }}" title="Latest issue preview" loading="lazy" tabindex="-1" scrolling="no"></iframe>
+      {% else %}
+      <div class="lp-phone__blank"><img src="{{ url_for('static', filename='img/logo.png') }}" alt=""><p>Your first issue arrives tomorrow morning.</p></div>
+      {% endif %}
+    </div>
+    <div class="lp-preview__copy">
+      <p class="lp-eyebrow lp-eyebrow--dark">What you get</p>
+      <h2>Two minutes. Twice a day. Everything that matters.</h2>
+      <ul class="lp-bullets">
+        {% for b in copy.bullets %}<li>{{ b }}</li>{% endfor %}
+      </ul>
+      {% if issue %}<p class="lp-preview__link"><a href="{{ url_for('static', filename='newsletters/' ~ issue) }}" target="_blank" rel="noopener">Read the latest issue in your browser →</a></p>{% endif %}
+    </div>
+  </div>
+</section>
+
+{% if copy.testimonials %}
+<section class="lp-quotes">
+  <div class="lp-quotes__inner">
+    <p class="lp-eyebrow lp-eyebrow--dark">From our readers</p>
+    <div class="lp-quotes__grid">
+      {% for t in copy.testimonials %}
+      <blockquote class="lp-quote"><p>“{{ t.text }}”</p><footer>— {{ t.name }}{% if t.place %}, {{ t.place }}{% endif %}</footer></blockquote>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="lp-bottom">
+  <div class="lp-bottom__inner">
+    <h2>Don’t wait for the evening news to tell you what to think.</h2>
+    <p>Join {{ site_name }} and get tomorrow’s Morning Brief the moment it goes out.</p>
+    {{ signup('bottom') }}
+  </div>
+</section>
+
+<a class="lp-sticky" href="#top">{{ copy.cta }} <span>· Free</span></a>
+{% endblock %}

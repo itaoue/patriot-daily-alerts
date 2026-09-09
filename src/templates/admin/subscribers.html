@@ -2,6 +2,14 @@
 {% block title %}Subscribers{% endblock %}
 {% block content %}
 <div class="ah-row"><h1>Subscribers</h1><a class="btn" href="{{ url_for('admin.export_subscribers') }}">Export CSV</a></div>
+{% if by_source %}
+<h2 style="margin:18px 0 8px;font-size:16px">Signups by source</h2>
+<p style="margin:0 0 10px;color:#666;font-size:13px">Landing-page signups are tagged <code>landing:&lt;utm_source&gt;:&lt;utm_campaign&gt;</code>. Divide a channel's spend by its “last 30 days” column for cost per subscriber.</p>
+<table style="margin-bottom:28px"><thead><tr><th>Source</th><th>Last 30 days</th><th>Active</th><th>All time</th></tr></thead><tbody>
+{% for r in by_source %}<tr><td><code>{{ r.source }}</code></td><td>{{ r.recent }}</td><td>{{ r.active }}</td><td>{{ r.total }}</td></tr>{% endfor %}
+</tbody></table>
+{% endif %}
+<h2 style="margin:0 0 8px;font-size:16px">All subscribers</h2>
 <table><thead><tr><th>Email</th><th>Source</th><th>Joined</th><th>Status</th></tr></thead><tbody>
 {% for s in pagination.items %}<tr><td>{{ s.email }}</td><td>{{ s.source }}</td><td>{{ s.created_at|date }}</td><td>{% if s.unsubscribed_at %}<span class="pill pill--draft">unsubscribed</span>{% else %}<span class="pill pill--published">active</span>{% endif %}</td></tr>{% endfor %}
 </tbody></table>

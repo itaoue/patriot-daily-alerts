@@ -283,3 +283,49 @@ def test_comment_notification_and_one_click_moderation(client, monkeypatch):
     client.post("/api/contact", data={"name": "Reader", "email": "r@example.com", "subject": "Tip", "message": "Look into this"})
     assert sent[-1][0] == "Contact form: Tip"
     current_app.config.update(NOTIFY_EMAIL="", SMTP_HOST="", SMTP_USER="", SMTP_PASSWORD="")
+
+
+def test_landing_page_variants_and_utm_passthrough(client):
+    r = client.get("/join/")
+    assert r.status_code == 200
+    assert b"Send Me the Morning Brief" in r.data
+    assert b'name="next" value="/welcome/"' in r.data
+    assert b"mh-main-nav" not in r.data  # standalone page: no site navigation to leak clicks
+    r = client.get("/join/?h=border&utm_source=taboola&utm_campaign=sept")
+    assert b"border and immigration" in r.data
+    assert b'name="utm_source" value="taboola"' in r.data
+    assert b'name="utm_content" value="border"' in r.data
+    assert client.get("/join/?h=nonsense").status_code == 200  # unknown variant falls back to default copy
+
+
+def test_landing_signup_tags_source_and_redirects_to_welcome(client):
+    r = client.post("/api/subscribe", data={
+        "email": "lp@example.com", "source": "landing", "utm_source": "Taboola", "utm_campaign": "Sept 09", "next": "/welcome/",
+    })
+    assert r.status_code == 302 and r.headers["Location"].endswith("/welcome/")
+    assert Subscriber.query.filter_by(email="lp@example.com").one().source == "landing:taboola:sept09"
+    # JSON clients get the redirect target back instead of a 302
+    j = client.post("/api/subscribe", json={"email": "lp2@example.com", "source": "landing", "next": "/welcome/"}).get_json()
+    assert j == {"ok": True, "next": "/welcome/"}
+    # open-redirect attempts are ignored
+    r = client.post("/api/subscribe", data={"email": "lp3@example.com", "next": "https://evil.example"})
+    assert r.status_code == 200 and b"on the list" in r.data
+    r = client.post("/api/subscribe", data={"email": "lp4@example.com", "next": "//evil.example"})
+    assert r.status_code == 200
+    assert client.post("/api/subscribe", json={"email": "plain@example.com"}).get_json() == {"ok": True, "next": ""}
+
+
+def test_welcome_page(client):
+    r = client.get("/welcome/")
+    assert r.status_code == 200
+    assert b"noindex" in r.data
+    assert b"truthsocial.com/share" in r.data
+    assert b"utm_source%3Dreferral" in r.data
+
+
+def test_admin_subscribers_page_breaks_down_signups_by_source(client):
+    client.post("/admin/login", data={"password": "ci-password"})
+    r = client.get("/admin/subscribers/")
+    assert r.status_code == 200
+    assert b"Signups by source" in r.data
+    assert b"landing:taboola:sept09" in r.data

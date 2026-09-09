@@ -37,15 +37,18 @@
       var btn = form.querySelector('button');
       var email = form.querySelector('input[type=email]').value.trim();
       btn.disabled = true;
+      var payload = { email: email };  // every field, so the landing page's UTM + next fields travel too
+      new FormData(form).forEach(function (v, k) { if (k !== 'email') payload[k] = v; });
       fetch(form.action, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ email: email, source: form.querySelector('[name=source]').value, website: form.querySelector('[name=website]').value })
+        body: JSON.stringify(payload)
       }).then(function (r) { return r.json(); }).then(function (j) {
         if (j.ok) {
+          if (typeof gtag === 'function') gtag('event', 'newsletter_signup', { source: payload.source || 'site' });
+          if (j.next) { location.href = j.next; return; }
           form.classList.add('is-done');
           msg.textContent = 'You’re on the list. Watch your inbox tomorrow morning.';
-          if (typeof gtag === 'function') gtag('event', 'newsletter_signup', { source: form.querySelector('[name=source]').value });
         } else {
           msg.textContent = j.error || 'Something went wrong. Please try again.';
         }
@@ -57,11 +60,22 @@
   // Copy link
   document.querySelectorAll('[data-copy]').forEach(function (b) {
     b.addEventListener('click', function () {
-      var url = location.href.split('?')[0];
+      var url = b.getAttribute('data-copy-url') || location.href.split('?')[0];
+      var label = b.textContent;
       if (navigator.share) { navigator.share({ title: document.title, url: url }).catch(function () {}); return; }
-      navigator.clipboard.writeText(url).then(function () { b.textContent = '✓'; setTimeout(function () { b.textContent = '🔗'; }, 1500); });
+      navigator.clipboard.writeText(url).then(function () { b.textContent = label.length > 2 ? 'Copied ✓' : '✓'; setTimeout(function () { b.textContent = label; }, 1500); });
     });
   });
+
+  // Landing page: the sticky mobile CTA only shows once the hero signup form has scrolled out of view
+  var sticky = document.querySelector('.lp-sticky');
+  var heroForm = document.getElementById('form-hero');
+  if (sticky && heroForm && 'IntersectionObserver' in window) {
+    sticky.classList.add('is-hidden');
+    new IntersectionObserver(function (entries) {
+      sticky.classList.toggle('is-hidden', entries[0].isIntersecting);
+    }, { threshold: 0.2 }).observe(heroForm);
+  }
 
   // Hide broken hotlinked images gracefully
   document.querySelectorAll('img').forEach(function (img) {

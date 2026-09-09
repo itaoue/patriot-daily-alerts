@@ -1,0 +1,80 @@
+{% extends "landing_base.html" %}
+{% block title %}You’re on the list — {{ site_name }}{% endblock %}
+{% block description %}Welcome to {{ site_name }}. Your first Morning Brief arrives tomorrow.{% endblock %}
+{% block canonical %}/welcome/{% endblock %}
+{% block robots %}<meta name="robots" content="noindex">{% endblock %}
+{% block body_class %}lp-body--welcome{% endblock %}
+{% set share_url = site_url ~ '/join/?utm_source=referral&utm_medium=share' %}
+{% set share_text = 'I just signed up for ' ~ site_name ~ ' — real American news, morning and evening, free:' %}
+{% block content %}
+<section class="lp-welcome">
+  <div class="lp-welcome__inner">
+    <div class="lp-check" aria-hidden="true">✓</div>
+    <h1>You’re on the list.</h1>
+    <p class="lp-welcome__sub">Your first {{ site_name }} email arrives tomorrow morning. Three quick things while you’re here:</p>
+
+    <ol class="lp-steps">
+      <li class="lp-step">
+        <span class="lp-step__num">1</span>
+        <div>
+          <h2>Make sure it reaches you</h2>
+          {% if copy.from_email %}
+          <p>Add <strong>{{ copy.from_email }}</strong> to your contacts. Gmail users: when the first issue lands in Promotions, drag it to Primary once and it stays there.</p>
+          {% else %}
+          <p>When the first issue arrives, add the sender to your contacts. Gmail users: if it lands in Promotions, drag it to Primary once and it stays there.</p>
+          {% endif %}
+        </div>
+      </li>
+
+      {% if poll %}
+      <li class="lp-step">
+        <span class="lp-step__num">2</span>
+        <div>
+          <h2>Today’s Poll</h2>
+          <p class="lp-poll__q">{{ poll.question }}</p>
+          {% if voted is none %}
+          <div class="lp-poll__options">
+            {% for label in poll.option_list %}<a class="btn" href="{{ url_for('public.poll_vote', poll_id=poll.id, choice=loop.index0) }}">{{ label }}</a>{% endfor %}
+          </div>
+          <p class="lp-step__note">One tap. You’ll see how other readers voted.</p>
+          {% else %}
+          <p><a class="btn btn--ghost" href="{{ url_for('public.poll_results', poll_id=poll.id) }}">See the results →</a></p>
+          {% endif %}
+        </div>
+      </li>
+      {% endif %}
+
+      <li class="lp-step">
+        <span class="lp-step__num">{{ 3 if poll else 2 }}</span>
+        <div>
+          <h2>Know a patriot who’d want this?</h2>
+          <p>Send them the link. It takes ten seconds and it’s how most of our readers found us.</p>
+          <div class="lp-share">
+            <a href="sms:?&body={{ (share_text ~ ' ' ~ share_url)|urlencode }}">Text</a>
+            <a href="mailto:?subject={{ ('Thought you’d like ' ~ site_name)|urlencode }}&body={{ (share_text ~ ' ' ~ share_url)|urlencode }}">Email</a>
+            <a href="https://www.facebook.com/sharer/sharer.php?u={{ share_url|urlencode }}" target="_blank" rel="noopener">Facebook</a>
+            <a href="https://twitter.com/intent/tweet?url={{ share_url|urlencode }}&text={{ share_text|urlencode }}" target="_blank" rel="noopener">X</a>
+            <a href="https://truthsocial.com/share?url={{ share_url|urlencode }}&title={{ share_text|urlencode }}" target="_blank" rel="noopener">Truth Social</a>
+            <a href="https://t.me/share/url?url={{ share_url|urlencode }}&text={{ share_text|urlencode }}" target="_blank" rel="noopener">Telegram</a>
+            <button type="button" data-copy data-copy-url="{{ share_url }}">Copy link</button>
+          </div>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+{% if latest %}
+<section class="lp-today">
+  <div class="lp-today__inner">
+    <div class="section-head"><h2 class="section-title">Meanwhile, today’s top stories</h2><a class="section-more" href="/">Front page →</a></div>
+    <div class="grid grid--3">
+      {% for p in latest %}{% with post=p, variant='grid' %}{% include "partials/_card.html" %}{% endwith %}{% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>if (typeof gtag === 'function') gtag('event', 'sign_up', { method: 'newsletter_landing' });</script>
+{% endblock %}

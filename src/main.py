@@ -39,8 +39,15 @@ def create_app(config_object=Config) -> Flask:
 
         nl_cfg = _json.load(open(os.path.join(os.path.dirname(__file__), "..", "content", "newsletter", "config.json"), encoding="utf-8"))
         app.config["POLL_SPONSOR"] = nl_cfg.get("sponsor")
+        app.config["POSTAL_ADDRESS"] = nl_cfg.get("postal_address", "")
     except (OSError, ValueError):
         pass
+    try:  # copy for the /join/ landing page and /welcome/ thank-you page
+        import json as _json
+
+        app.config["LANDING"] = _json.load(open(os.path.join(os.path.dirname(__file__), "..", "content", "landing.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        app.config["LANDING"] = {}
     app.jinja_env.filters["date"] = format_date
     app.jinja_env.filters["datetime"] = format_datetime
     app.jinja_env.filters["ago"] = time_ago
@@ -53,6 +60,7 @@ def create_app(config_object=Config) -> Flask:
             "site_tagline": app.config["SITE_TAGLINE"],
             "contact_email": app.config["CONTACT_EMAIL"],
             "ga_id": app.config["GA_MEASUREMENT_ID"],
+            "postal_address": app.config.get("POSTAL_ADDRESS", ""),
             "nav_categories": getattr(g, "nav_categories", []),
             "current_path": request.path,
         }
