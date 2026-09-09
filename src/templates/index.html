@@ -1,4 +1,10 @@
 {% extends "base.html" %}
+{% block head %}
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[
+{"@type":"Organization","@id":"{{ site_url }}/#organization","name":{{ site_name|tojson }},"url":"{{ site_url }}/","description":{{ site_tagline|tojson }},"logo":{"@type":"ImageObject","@id":"{{ site_url }}/#logo","url":"{{ site_url }}{{ url_for('static', filename='img/logo.png') }}","width":603,"height":65,"caption":{{ site_name|tojson }}},"image":{"@id":"{{ site_url }}/#logo"}},
+{"@type":"WebSite","@id":"{{ site_url }}/#website","name":{{ site_name|tojson }},"url":"{{ site_url }}/","description":{{ site_tagline|tojson }},"inLanguage":"en-US","publisher":{"@id":"{{ site_url }}/#organization"},"potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"{{ site_url }}/search/?q={search_term_string}"},"query-input":"required name=search_term_string"}}
+]}</script>
+{% endblock %}
 {% block content %}
 {% if not lead %}
 <div class="empty"><h1>No stories yet.</h1><p>Sign in to <a href="/admin/">the newsroom</a> to publish your first story, or run the WordPress importer.</p></div>
