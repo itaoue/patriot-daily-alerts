@@ -250,8 +250,8 @@ def email_subject(leads, campaign):
     return fallback
 
 
-def create_poll(token, campaign, question, options):
-    r = requests.post(f"{SITE}/api/polls", json={"campaign": campaign, "question": question, "options": options},
+def create_poll(token, campaign, question, options, refresh=False):
+    r = requests.post(f"{SITE}/api/polls", json={"campaign": campaign, "question": question, "options": options, "update": refresh},
                       headers={"Authorization": f"Bearer {token}", "User-Agent": "Mozilla/5.0"}, timeout=30)
     r.raise_for_status()
     return r.json()
@@ -340,6 +340,7 @@ def main():
     ap.add_argument("--lead", help="slug of the story to run as the lead (top of the issue and subject line)")
     ap.add_argument("--subject", help="use this subject line instead of generating one")
     ap.add_argument("--teaser", help="use this preheader teaser (shown after 'and') instead of generating one")
+    ap.add_argument("--refresh-poll", action="store_true", help="replace this issue's poll question (e.g. after changing the lead)")
     ap.add_argument("--since", help="UTC time YYYY-MM-DDTHH:MM:SS; with --min-new, skip unless that many stories were published after it")
     ap.add_argument("--min-new", type=int, default=0)
     a = ap.parse_args()
@@ -374,7 +375,7 @@ def main():
         question, options = poll_question(leads, campaign)
         if question:
             try:
-                poll = create_poll(a.token, campaign, question, options)
+                poll = create_poll(a.token, campaign, question, options, refresh=a.refresh_poll)
                 print(f"  poll: {poll['question']} ({' / '.join(poll['options'])})")
             except requests.RequestException as exc:
                 print(f"  poll skipped: {exc}")
