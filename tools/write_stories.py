@@ -94,7 +94,10 @@ EDITOR_SCHEMA = {
 
 
 def load_used():
-    return json.loads(USED.read_text()) if USED.exists() else {"urls": [], "titles": []}
+    data = json.loads(USED.read_text()) if USED.exists() else {}
+    for k in ("urls", "titles", "photos"):
+        data.setdefault(k, [])
+    return data
 
 
 def norm(t):
@@ -287,7 +290,7 @@ def fix_drafts(client, token, status):
     print(f"\ndone: {len(done)} draft(s) fixed; estimated API cost ${USAGE['cost']:.2f}")
 
 
-def attach_image(art, slug, date, no_image):
+def attach_image(art, slug, date, no_image, used=None):
     if no_image:
         return "", ""
     ym = pathlib.Path(date[:4]) / date[5:7]
@@ -296,10 +299,13 @@ def attach_image(art, slug, date, no_image):
     if art.get("person") and art.get("person_query"):
         try:
             from fetch_person_photo import fetch
-            credit = fetch(art["person_query"], out)
+            # never reuse a Commons file the site already ran (last 60 remembered), nor a byte-identical image this month
+            credit, title = fetch(art["person_query"], out, exclude=set((used or {}).get("photos", [])), existing_dir=out.parent)
             if credit:
+                if used is not None:
+                    used["photos"] = ((used.get("photos") or []) + [title])[-60:]
                 return url, f"Photo: {credit}"
-            print("  no licensed photo found, generating instead")
+            print("  no unused licensed photo found, generating instead")
         except Exception as exc:  # noqa: BLE001
             print(f"  Wikimedia lookup failed ({exc}); generating instead")
     try:
@@ -381,7 +387,7 @@ def main():
                 revised = art.get("changes", [])
                 print(f"  revised ({len(revised)} fixes)")
             slug = re.sub(r"[^a-z0-9-]", "", art["slug"].lower().replace(" ", "-")).strip("-")[:80]
-            image_url, credit = attach_image(art, slug, a.date, a.no_image)
+            image_url, credit = attach_image(art, slug, a.date, a.no_image, used)
             notes_out = f"Editor verdict: {verdict['verdict'].upper()}. {verdict['notes']}"
             if verdict.get("issues"):
                 notes_out += "\nIssues:\n- " + "\n- ".join(verdict["issues"])

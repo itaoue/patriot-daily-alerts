@@ -56,17 +56,28 @@ def candidates(query, limit=12):
     return out
 
 
-def fetch(query, out_path, anchor=0.2):
-    cands = candidates(query)
-    if not cands:
-        return None
-    c = cands[0]
+def fetch(query, out_path, anchor=0.2, exclude=(), existing_dir=None):
+    """Download the best licensed photo not in `exclude` (Commons file titles) and not byte-identical to a file already in
+    `existing_dir`. Returns (credit, file_title) or (None, None)."""
+    import hashlib
+
+    hashes = set()
+    if existing_dir and pathlib.Path(existing_dir).exists():
+        for f in pathlib.Path(existing_dir).glob("*.jpg"):
+            hashes.add(hashlib.md5(f.read_bytes()).hexdigest())  # noqa: S324 - dedupe only
     out_path = pathlib.Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with urllib.request.urlopen(urllib.request.Request(c["url"], headers=UA), timeout=90) as r:
-        out_path.write_bytes(r.read())
-    fit(out_path, 1200, 630, anchor)
-    return c["credit"]
+    for c in candidates(query):
+        if c["title"] in exclude:
+            continue
+        with urllib.request.urlopen(urllib.request.Request(c["url"], headers=UA), timeout=90) as r:
+            data = r.read()
+        if hashlib.md5(data).hexdigest() in hashes:  # noqa: S324
+            continue
+        out_path.write_bytes(data)
+        fit(out_path, 1200, 630, anchor)
+        return c["credit"], c["title"]
+    return None, None
 
 
 if __name__ == "__main__":
@@ -80,6 +91,6 @@ if __name__ == "__main__":
         for c in candidates(a.query):
             print(f"{c['width']}x{c['height']} {c['license']:<12} {c['title']}")
         sys.exit(0)
-    credit = fetch(a.query, a.out, a.anchor)
-    print(credit or "no suitable licensed photo found")
+    credit, title = fetch(a.query, a.out, a.anchor)
+    print(f"{credit} [{title}]" if credit else "no suitable licensed photo found")
     sys.exit(0 if credit else 1)
