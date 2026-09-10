@@ -1,0 +1,23 @@
+{
+  "_comment": "Copy for the welcome email sent the moment someone subscribes (src/welcome_email.py). Set enabled to false to stop sending. Keep it plain and personal: a text-forward note lands in Primary far more often than a designed marketing template.",
+  "enabled": true,
+  "subject": "Welcome to Patriot Daily Alerts — do this one thing first",
+  "preheader": "Your first briefing lands tomorrow morning.",
+  "intro": [
+    "Thanks for signing up.",
+    "Twice a day, morning and evening, we send you the three stories that actually matter, written from a conservative perspective, with the sources named so you can check every word yourself. Two minutes to read."
+  ],
+  "ask_heading": "One favor before your first issue arrives.",
+  "ask_intro": "Email providers put new senders in the wrong folder by default. Ten seconds now and you won't miss anything:",
+  "ask_steps": [
+    ["Gmail:", "find this email in Promotions and drag it to Primary. When it asks “Do this for future messages?” — say yes."],
+    ["Outlook, Yahoo, AOL:", "add news@patriotdailyalerts.com to your contacts."],
+    ["Apple Mail:", "tap the sender name at the top, then “Add to Contacts.”"]
+  ],
+  "ask_outro": "Do it once and you're set.",
+  "stories_heading": "While you're here, today's front page",
+  "stories": 3,
+  "poll_heading": "And today's question for readers",
+  "reply_line": "If there's a story you think the networks are ignoring, hit reply and tell us. That's how a lot of our best coverage starts.",
+  "signoff": "— The editors, Patriot Daily Alerts"
+}

@@ -4,7 +4,7 @@ from datetime import timedelta
 from flask import Blueprint, Response, abort, current_app, redirect, render_template, request, send_from_directory, session, url_for
 from sqlalchemy import or_
 
-from src.models import Category, Comment, Page, Poll, PollVote, Post, db, utcnow
+from src.models import Category, Comment, Page, Poll, PollVote, Post, Subscriber, db, utcnow
 from src.utils import strip_tags, valid_email
 
 public_bp = Blueprint("public", __name__)
@@ -230,15 +230,39 @@ def join():
 @public_bp.route("/welcome/")
 def welcome():
     """Thank-you page after a landing-page signup: add-to-contacts nudge, today's poll, share links, top stories."""
+    from src.welcome_email import enabled as welcome_email_enabled
+
     poll = Poll.query.order_by(Poll.created_at.desc()).first()
     voted = request.cookies.get(f"pv{poll.id}") if poll else None
     latest = published_posts().order_by(Post.published_at.desc()).limit(3).all()
-    return render_template("welcome.html", copy=current_app.config.get("LANDING") or {}, poll=poll, voted=voted, latest=latest)
+    return render_template("welcome.html", copy=current_app.config.get("LANDING") or {}, poll=poll, voted=voted,
+                           latest=latest, emailed=welcome_email_enabled())
 
 
 @public_bp.route("/remove-from-our-email-list/")
 def unsubscribe_page():
     return render_template("unsubscribe.html", email=request.args.get("email", ""))
+
+
+@public_bp.route("/remove-from-our-email-list/<token>/", methods=["GET", "POST"])
+def unsubscribe_token(token):
+    """Target of the List-Unsubscribe header on the welcome email.
+
+    A POST is the mailbox provider's one-click unsubscribe and takes effect immediately. A GET only pre-fills the
+    confirmation form: link scanners follow GETs, and they must not be able to unsubscribe a reader by accident.
+    """
+    from src.welcome_email import verify_unsubscribe_token
+
+    email = verify_unsubscribe_token(token)
+    if not email:
+        abort(404)
+    if request.method == "POST":
+        sub = Subscriber.query.filter_by(email=email).first()
+        if sub and not sub.unsubscribed_at:
+            sub.unsubscribed_at = utcnow()
+            db.session.commit()
+        return render_template("unsubscribe.html", done=True, email=email)
+    return render_template("unsubscribe.html", email=email, token=token)
 
 
 @public_bp.route("/contact-us/")

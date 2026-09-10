@@ -267,7 +267,7 @@ def test_comment_notification_and_one_click_moderation(client, monkeypatch):
     from src.models import Comment
 
     sent = []
-    monkeypatch.setattr(notify, "_send_now", lambda cfg, subject, text, html: sent.append((subject, text)))
+    monkeypatch.setattr(notify, "_send_now", lambda cfg, to, subject, text, html, headers=None: sent.append((subject, text)))
     current_app.config.update(NOTIFY_EMAIL="editor@example.com", SMTP_HOST="smtp.example.com", SMTP_USER="u", SMTP_PASSWORD="p")
     post = Post.query.filter_by(status="published").order_by(Post.published_at.desc()).first()
     client.post(f"/{post.slug}/comment", data={"name": "Notifier", "body": "Ping the editor"})
@@ -329,3 +329,67 @@ def test_admin_subscribers_page_breaks_down_signups_by_source(client):
     assert r.status_code == 200
     assert b"Signups by source" in r.data
     assert b"landing:taboola:sept09" in r.data
+
+
+def test_welcome_email_sent_once_on_signup(client, monkeypatch):
+    from flask import current_app
+
+    from src import notify
+
+    sent = []
+    monkeypatch.setattr(notify, "_send_now",
+                        lambda cfg, to, subject, text, html, headers=None: sent.append((to, subject, text, html, headers)))
+    current_app.config.update(SMTP_HOST="smtp.example.com", SMTP_USER="u", SMTP_PASSWORD="p")
+
+    client.post("/api/subscribe", json={"email": "newreader@example.com", "source": "landing"})
+    assert len(sent) == 1
+    to, subject, text, html, headers = sent[0]
+    assert to == ["newreader@example.com"] and "Welcome" in subject
+    assert "drag it to Primary" in text and "drag it to Primary" in html
+    assert "utm_source=welcome" in html  # story and poll links are attributed to the welcome email
+    assert headers["List-Unsubscribe-Post"] == "List-Unsubscribe=One-Click"
+
+    client.post("/api/subscribe", json={"email": "newreader@example.com"})  # already active: no second welcome
+    assert len(sent) == 1
+
+    client.post("/api/unsubscribe", data={"email": "newreader@example.com"})
+    client.post("/api/subscribe", json={"email": "newreader@example.com"})  # re-joining does get one
+    assert len(sent) == 2
+
+
+def test_welcome_unsubscribe_token_needs_a_post(client, monkeypatch):
+    from flask import current_app
+
+    from src import notify, welcome_email
+
+    sent = []
+    monkeypatch.setattr(notify, "_send_now",
+                        lambda cfg, to, subject, text, html, headers=None: sent.append(headers))
+    current_app.config.update(SMTP_HOST="smtp.example.com", SMTP_USER="u", SMTP_PASSWORD="p")
+    client.post("/api/subscribe", json={"email": "oneclick@example.com"})
+    path = sent[0]["List-Unsubscribe"].strip("<>").replace(current_app.config["SITE_URL"], "")
+
+    # A link scanner following the GET must not unsubscribe anyone; it only pre-fills the confirmation form.
+    assert client.get(path).status_code == 200
+    assert Subscriber.query.filter_by(email="oneclick@example.com").one().unsubscribed_at is None
+
+    assert client.post(path).status_code == 200
+    assert Subscriber.query.filter_by(email="oneclick@example.com").one().unsubscribed_at is not None
+    assert client.get("/remove-from-our-email-list/not-a-real-token/").status_code == 404
+
+    with current_app.test_request_context():
+        assert welcome_email.verify_unsubscribe_token(welcome_email.unsubscribe_token("a@b.com")) == "a@b.com"
+
+
+def test_welcome_email_skipped_without_a_transport(client, monkeypatch):
+    from flask import current_app
+
+    from src import notify
+
+    sent = []
+    monkeypatch.setattr(notify, "_send_now",
+                        lambda cfg, to, subject, text, html, headers=None: sent.append(to))
+    current_app.config.update(RESEND_API_KEY="", SMTP_HOST="", SMTP_USER="", SMTP_PASSWORD="")
+    client.post("/api/subscribe", json={"email": "notransport@example.com"})
+    assert sent == []
+    assert Subscriber.query.filter_by(email="notransport@example.com").count() == 1  # signup still succeeds

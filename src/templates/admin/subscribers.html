@@ -1,7 +1,15 @@
 {% extends "admin/base.html" %}
 {% block title %}Subscribers{% endblock %}
 {% block content %}
-<div class="ah-row"><h1>Subscribers</h1><a class="btn" href="{{ url_for('admin.export_subscribers') }}">Export CSV</a></div>
+<div class="ah-row"><h1>Subscribers</h1>
+  <span>
+    <a class="btn" href="{{ url_for('admin.welcome_preview') }}" target="_blank" title="See the welcome email new subscribers receive">Preview welcome email</a>
+    <form method="post" action="{{ url_for('admin.welcome_test') }}" class="inline" style="display:inline">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><button title="Send yourself a copy of the welcome email">Send test</button>
+    </form>
+    <a class="btn" href="{{ url_for('admin.export_subscribers') }}">Export CSV</a>
+  </span>
+</div>
 {% if by_source %}
 <h2 style="margin:18px 0 8px;font-size:16px">Signups by source</h2>
 <p style="margin:0 0 10px;color:#666;font-size:13px">Landing-page signups are tagged <code>landing:&lt;utm_source&gt;:&lt;utm_campaign&gt;</code>. Divide a channel's spend by its “last 30 days” column for cost per subscriber.</p>

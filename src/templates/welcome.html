@@ -11,14 +11,17 @@
   <div class="lp-welcome__inner">
     <div class="lp-check" aria-hidden="true">✓</div>
     <h1>You’re on the list.</h1>
-    <p class="lp-welcome__sub">Your first {{ site_name }} email arrives tomorrow morning. Three quick things while you’re here:</p>
+    <p class="lp-welcome__sub">{% if emailed %}We just sent you a welcome email — it’s in your inbox right now.{% else %}Your first {{ site_name }} email arrives tomorrow morning.{% endif %} Three quick things while you’re here:</p>
 
     <ol class="lp-steps">
       <li class="lp-step">
         <span class="lp-step__num">1</span>
         <div>
           <h2>Make sure it reaches you</h2>
-          {% if copy.from_email %}
+          {% if emailed %}
+          <p>Open the welcome email we just sent{% if copy.from_email %} from <strong>{{ copy.from_email }}</strong>{% endif %}. If it landed in Promotions, drag it to Primary once — Gmail will keep every issue there from then on. On Outlook, Yahoo or Apple Mail, add the sender to your contacts instead.</p>
+          <p class="lp-step__note">Nothing yet? Give it a minute, then check Promotions and Spam.</p>
+          {% elif copy.from_email %}
           <p>Add <strong>{{ copy.from_email }}</strong> to your contacts. Gmail users: when the first issue lands in Promotions, drag it to Primary once and it stays there.</p>
           {% else %}
           <p>When the first issue arrives, add the sender to your contacts. Gmail users: if it lands in Promotions, drag it to Primary once and it stays there.</p>

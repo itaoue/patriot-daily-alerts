@@ -267,6 +267,37 @@ def moderate_by_token(token):
     return render_template("admin/moderated.html", comment=c, action=action)
 
 
+@admin_bp.route("/welcome-preview")
+@login_required
+def welcome_preview():
+    """Render the welcome email exactly as a new subscriber would receive it, without sending anything."""
+    from src.welcome_email import build
+
+    return build(current_app.config.get("NOTIFY_EMAIL") or "preview@example.com")["html"]
+
+
+@admin_bp.route("/welcome-test", methods=["POST"])
+@login_required
+def welcome_test():
+    from src.notify import transport_configured
+    from src.welcome_email import config, send
+
+    to = current_app.config.get("NOTIFY_EMAIL")
+    if not transport_configured():
+        flash("No mail transport: set RESEND_API_KEY or SMTP_HOST/SMTP_USER/SMTP_PASSWORD.", "error")
+    elif not to:
+        flash("Set NOTIFY_EMAIL to choose where the test copy goes.", "error")
+    elif not config().get("enabled", True):
+        flash("The welcome email is switched off in content/welcome_email.json.", "error")
+    else:
+        try:
+            send(to, wait=True)
+            flash(f"Welcome email sent to {to}.", "ok")
+        except Exception as exc:  # noqa: BLE001
+            flash(f"Sending failed: {exc}", "error")
+    return redirect(url_for("admin.subscribers"))
+
+
 @admin_bp.route("/notify-test", methods=["POST"])
 @login_required
 def notify_test():

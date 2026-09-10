@@ -64,12 +64,17 @@ def subscribe():
             return jsonify(ok=False, error="Please enter a valid email address."), 400
         return render_template("subscribed.html", ok=False, email=email), 400
     sub = Subscriber.query.filter_by(email=email).first()
+    is_new = sub is None or sub.unsubscribed_at is not None  # re-submitting an active address must not send twice
     if sub:
         sub.unsubscribed_at = None
     else:
         db.session.add(Subscriber(email=email, source=_signup_source(data)))
     db.session.commit()
     _push_bigmailer(email)
+    if is_new:
+        from src import welcome_email
+
+        welcome_email.send(email)
     if _wants_json():
         return jsonify(ok=True, next=nxt)
     if nxt:

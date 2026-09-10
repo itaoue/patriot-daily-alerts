@@ -1,8 +1,8 @@
-"""Email notifications to the editor (new comments, contact messages).
+"""Outgoing email: notifications to the editor (new comments, contact messages) and the reader welcome email.
 
 Transport is chosen from the environment: RESEND_API_KEY (HTTPS, simplest on Railway) or SMTP_HOST/SMTP_USER/SMTP_PASSWORD
-(e.g. Gmail with an app password). NOTIFY_EMAIL is the recipient; nothing is sent when it is unset. Sending runs in a
-background thread so requests never wait on the mail server.
+(e.g. Gmail with an app password). Editor notifications go to NOTIFY_EMAIL and are skipped when it is unset; reader mail
+only needs a transport. Sending runs in a background thread so requests never wait on the mail server.
 """
 import logging
 import smtplib
@@ -17,24 +17,36 @@ from itsdangerous import BadSignature, URLSafeSerializer
 log = logging.getLogger(__name__)
 
 
-def configured(app=None) -> bool:
+TRANSPORT_KEYS = ("MAIL_FROM", "RESEND_API_KEY", "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SITE_NAME")
+
+
+def transport_configured(app=None) -> bool:
+    """True when a mail transport is set up, regardless of whether editor notifications have a recipient."""
     cfg = (app or current_app).config
-    return bool(cfg.get("NOTIFY_EMAIL")) and bool(cfg.get("RESEND_API_KEY") or (cfg.get("SMTP_HOST") and cfg.get("SMTP_USER")))
+    return bool(cfg.get("RESEND_API_KEY") or (cfg.get("SMTP_HOST") and cfg.get("SMTP_USER")))
 
 
-def _send_now(cfg: dict, subject: str, text: str, html: str) -> None:
-    to = [a.strip() for a in cfg["NOTIFY_EMAIL"].split(",") if a.strip()]
+def configured(app=None) -> bool:
+    return bool((app or current_app).config.get("NOTIFY_EMAIL")) and transport_configured(app)
+
+
+def _send_now(cfg: dict, to: list, subject: str, text: str, html: str, headers=None) -> None:
     sender = cfg.get("MAIL_FROM") or cfg.get("SMTP_USER") or "news@patriotdailyalerts.com"
     if cfg.get("RESEND_API_KEY"):
+        payload = {"from": formataddr((cfg["SITE_NAME"], sender)), "to": to, "subject": subject, "text": text, "html": html}
+        if headers:
+            payload["headers"] = headers
         r = requests.post("https://api.resend.com/emails", timeout=20,
                           headers={"Authorization": f"Bearer {cfg['RESEND_API_KEY']}", "Content-Type": "application/json"},
-                          json={"from": formataddr((cfg["SITE_NAME"], sender)), "to": to, "subject": subject, "text": text, "html": html})
+                          json=payload)
         r.raise_for_status()
         return
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = formataddr((cfg["SITE_NAME"], sender))
     msg["To"] = ", ".join(to)
+    for name, value in (headers or {}).items():
+        msg[name] = value
     msg.set_content(text)
     msg.add_alternative(html, subtype="html")
     port = int(cfg.get("SMTP_PORT") or 587)
@@ -49,18 +61,21 @@ def _send_now(cfg: dict, subject: str, text: str, html: str) -> None:
             s.send_message(msg)
 
 
-def send(subject: str, text: str, html: str, wait: bool = False) -> bool:
-    """Queue an email to the editor. Returns False when notifications are not configured."""
-    if not configured():
+def send_to(recipients, subject: str, text: str, html: str, headers=None, wait: bool = False) -> bool:
+    """Queue an email to arbitrary recipients. Returns False when no transport is configured.
+
+    The message body is built by the caller inside the request, so the sending thread never touches the database.
+    """
+    to = [a.strip() for a in (recipients.split(",") if isinstance(recipients, str) else recipients) if a and a.strip()]
+    if not to or not transport_configured():
         return False
-    cfg = {k: current_app.config.get(k) for k in ("NOTIFY_EMAIL", "MAIL_FROM", "RESEND_API_KEY", "SMTP_HOST", "SMTP_PORT",
-                                                    "SMTP_USER", "SMTP_PASSWORD", "SITE_NAME")}
+    cfg = {k: current_app.config.get(k) for k in TRANSPORT_KEYS}
 
     def run():
         try:
-            _send_now(cfg, subject, text, html)
-        except Exception as exc:  # noqa: BLE001 - notifications must never break a request
-            log.warning("notification email failed: %s", exc)
+            _send_now(cfg, to, subject, text, html, headers)
+        except Exception as exc:  # noqa: BLE001 - email must never break a request
+            log.warning("email to %s failed: %s", to[0], exc)
             if wait:
                 raise
 
@@ -69,6 +84,13 @@ def send(subject: str, text: str, html: str, wait: bool = False) -> bool:
     else:
         threading.Thread(target=run, daemon=True).start()
     return True
+
+
+def send(subject: str, text: str, html: str, wait: bool = False) -> bool:
+    """Queue an email to the editor. Returns False when notifications are not configured."""
+    if not configured():
+        return False
+    return send_to(current_app.config["NOTIFY_EMAIL"], subject, text, html, wait=wait)
 
 
 def moderation_token(comment_id: int, action: str) -> str:

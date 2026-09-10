@@ -128,6 +128,24 @@ python tools/write_stories.py --count 1   # 真写一篇进草稿
 - **感谢页**：提示加联系人（`from_email` 填了会显示具体地址）、当天投票、短信 / 邮件 / Facebook / X / Truth Social / Telegram 分享、今日头条。页面 `noindex`。
 - **转化事件**：表单提交触发 GA4 `newsletter_signup`，感谢页触发 `sign_up`；Taboola / Facebook 像素代码放进 `pixels_html`，只在这两个页面加载。
 
+## 欢迎邮件（注册后立即发送）
+
+新订阅者入库的同时收到一封欢迎信，由 `src/welcome_email.py` 生成、通过 `notify.py` 已有的 Resend / SMTP 通道发出，不经过 BigMailer。
+
+为什么要立刻发：读者刚填完邮箱的这几分钟是打开率最高的时刻，而 Gmail 和 Yahoo 判断后续邮件进"主要"还是"推广"，很大程度取决于这次早期互动。等到第二天早上才发第一封冷邮件，等于放弃这个机会。
+
+- **文案**在 `content/welcome_email.json`：主题、预览文字、正文段落、三步收件箱设置说明、结尾邀请回复的话。`"enabled": false` 可关闭发送。
+- **版式刻意做得朴素**：一个小 logo 加纯文字，不用日报那套大图加 READ MORE 按钮的营销模板。文字为主的邮件进主收件箱的概率明显更高，也更像编辑写给读者的一封信。
+- **全篇只有一个要求**：把邮件拖进主收件箱。后面的今日头条（取最新 3 篇）和当天投票是动态内容，用来换取一次点击——点击本身就是发给邮箱服务商的正面信号。链接都带 `utm_source=welcome`。
+- **重复注册不会重发**：已在列表里的地址再次提交不发，退订后重新加入会发。
+- **List-Unsubscribe 一键退订**：邮件头带签名令牌指向 `/remove-from-our-email-list/<token>/`。POST 是邮箱服务商的一键退订，立即生效；GET 只预填确认表单，因为链接扫描器会跟 GET，不能让它误退订真实读者。
+- **后台**：Subscribers 页有 **Preview welcome email**（浏览器里直接看，不发信）和 **Send test**（发一封到 `NOTIFY_EMAIL`）。
+- 感谢页 `/welcome/` 的文案会跟着发送状态变化：配好通道时提示读者立刻去收件箱找这封信，没配好时退回"明早收到第一封"的说法。
+
+Railway 变量：`RESEND_API_KEY`（推荐）或 `SMTP_*`，加上 `MAIL_FROM=news@patriotdailyalerts.com` 让发件地址和日报完全一致——读者做一次"加入联系人"才能对两边都生效。没配通道时不发信，注册流程照常。
+
+> 注意：如果之后在 BigMailer 里也配了加入列表的自动回复，两边会同时发，二选一。
+
 ## 邮件 Newsletter
 
 版式照搬 Middle America News 的早晚报：600px 单栏、logo 页头、深蓝的“edition + 日期”条、三条头条（大标题链接 + 全宽配图 + 红色 READ MORE 按钮）、Also Trending 标题列表、可选 SPONSORED 广告位、灰色页脚（退订、隐私、邮政地址、免责声明）。
