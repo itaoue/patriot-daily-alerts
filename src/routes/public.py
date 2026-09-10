@@ -250,12 +250,19 @@ def unsubscribe_token(token):
 
     A POST is the mailbox provider's one-click unsubscribe and takes effect immediately. A GET only pre-fills the
     confirmation form: link scanners follow GETs, and they must not be able to unsubscribe a reader by accident.
+
+    A token that no longer verifies (SECRET_KEY rotated, link mangled in transit) must never dead-end: a reader who
+    cannot unsubscribe reports spam instead, which costs the whole list far more than the unsubscribe would have. So a
+    bad token falls back to the plain form where they can type their address. A POST still fails, because there is no
+    way to tell whom to remove and reporting success would be a lie.
     """
     from src.welcome_email import verify_unsubscribe_token
 
     email = verify_unsubscribe_token(token)
     if not email:
-        abort(404)
+        if request.method == "POST":
+            abort(400)
+        return redirect(url_for("public.unsubscribe_page"), 302)
     if request.method == "POST":
         sub = Subscriber.query.filter_by(email=email).first()
         if sub and not sub.unsubscribed_at:

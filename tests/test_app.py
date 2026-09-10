@@ -375,7 +375,12 @@ def test_welcome_unsubscribe_token_needs_a_post(client, monkeypatch):
 
     assert client.post(path).status_code == 200
     assert Subscriber.query.filter_by(email="oneclick@example.com").one().unsubscribed_at is not None
-    assert client.get("/remove-from-our-email-list/not-a-real-token/").status_code == 404
+    # A dead token must never dead-end a reader: the GET falls back to the form they can fill in themselves.
+    r = client.get("/remove-from-our-email-list/not-a-real-token/")
+    assert r.status_code == 302 and r.headers["Location"].endswith("/remove-from-our-email-list/")
+    assert client.get(r.headers["Location"]).status_code == 200
+    # A one-click POST cannot guess whom to remove, so it fails rather than reporting a success that did not happen.
+    assert client.post("/remove-from-our-email-list/not-a-real-token/").status_code == 400
 
     with current_app.test_request_context():
         assert welcome_email.verify_unsubscribe_token(welcome_email.unsubscribe_token("a@b.com")) == "a@b.com"
