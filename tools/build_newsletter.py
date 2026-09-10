@@ -161,6 +161,28 @@ def poll_question(leads, campaign):
 
 SUBJECT_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["subject", "teaser"],
                   "properties": {"subject": {"type": "string"}, "teaser": {"type": "string"}}}
+CHECK_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["subject_ok", "teaser_ok", "subject", "teaser", "notes"],
+                "properties": {"subject_ok": {"type": "boolean"}, "teaser_ok": {"type": "boolean"}, "subject": {"type": "string"},
+                               "teaser": {"type": "string"}, "notes": {"type": "string"}}}
+
+
+def fact_check_lines(client, subject, teaser, stories_text):
+    """Second pass: every word of the subject/teaser must be supported by the stories; overstated verbs get rewritten."""
+    msg = client.messages.create(
+        model=os.environ.get("EDITOR_MODEL", "claude-sonnet-5"), max_tokens=400,
+        output_config={"effort": "low", "format": {"type": "json_schema", "schema": CHECK_SCHEMA}},
+        messages=[{"role": "user", "content": (
+            "You are a fact-checker for email subject lines. For each line, decide whether EVERY claim and verb is supported by the story text "
+            "(a proposal or comment period is not a decision; 'blocks/bans/fires/kills/wins' require that outcome to have happened; numbers and "
+            "names must appear in the story). If a line overstates, rewrite it minimally in the same style (keep exactly one ALL-CAPS word, "
+            "the em dash, 55-90 characters) so it is accurate. Return subject_ok/teaser_ok and the final lines.\n\n"
+            f"SUBJECT: {subject}\nTEASER: {teaser}\n\n{stories_text}")}])
+    if msg.stop_reason != "end_turn":
+        return subject, teaser
+    data = json.loads(next(b.text for b in msg.content if b.type == "text"))
+    if not data.get("subject_ok") or not data.get("teaser_ok"):
+        print(f"  subject check: {data.get('notes', '')[:200]}")
+    return (data.get("subject") or subject).strip(), (data.get("teaser") or teaser).strip()
 
 SUBJECT_RULES = (
     "You write email subject lines for a conservative American news daily, in the style of Middle America News.\n"
@@ -169,7 +191,9 @@ SUBJECT_RULES = (
     "Exactly ONE word in ALL CAPS, placed on the key verb or adjective (choose from: BREAKING, BOMBSHELL, EXPOSED, BLOCKS, FIRED, SILENT, "
     "MASSIVE, SHOCKING, DEVASTATING, URGENT, STUNNING, REFUSES, WARNS). Name the who; hold back one concrete detail to create curiosity "
     "(e.g. 'Names Two Americans', 'His Own Minister Refuses', 'Wait Until You Hear Why'). Heroes and villains are fine when the story supports them. "
-    "Hard rules: every claim must be true to the story text below - never promise something the story does not contain; no question marks; "
+    "Hard rules: every claim must be true to the story text below - never promise something the story does not contain; the verb must match what "
+    "actually happened (a proposal, a comment period, a lawsuit filed or a report is NOT a decision: never say BLOCKS, BANS, FIRES, KILLS or WINS "
+    "unless the story says that outcome occurred); no question marks; "
     "no numbers unless they are in the story; no emojis; no quotation marks; do not start with the ALL-CAPS word more than one time in three.\n"
     "Examples of the target style: 'Trump Drops MASSIVE Cash Bomb Into Red State Senate Race - Democrats in Desperation Mode' / "
     "'Minnesota Court BLOCKS Patriot's Demand for Vote Recount After Disturbing Irregularities Surface' / "
@@ -212,6 +236,8 @@ def email_subject(leads, campaign):
             data = json.loads(next(b.text for b in msg.content if b.type == "text"))
             subject, teaser = tidy(data.get("subject", "")), tidy(data.get("teaser", ""))
             if 40 <= len(subject) <= 110 and has_caps(subject) and (len(teaser) < 20 or has_caps(teaser)):
+                subject, teaser = fact_check_lines(client, subject, teaser, content)
+                subject, teaser = tidy(subject), tidy(teaser)
                 return subject[:120], (teaser[:120] if len(teaser) >= 20 else fallback[1])
             if attempt == 0:  # one corrective pass: the ALL-CAPS anchor word is mandatory in both lines
                 messages += [{"role": "assistant", "content": json.dumps(data)},
