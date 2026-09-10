@@ -337,6 +337,9 @@ def main():
     ap.add_argument("--hours", type=int, default=16, help="lead stories must be published within this many hours")
     ap.add_argument("--token", default=os.environ.get("PUBLISH_TOKEN", ""))
     ap.add_argument("--skip-if-exists", action="store_true", help="do nothing if this issue was already built (scheduled runs)")
+    ap.add_argument("--lead", help="slug of the story to run as the lead (top of the issue and subject line)")
+    ap.add_argument("--subject", help="use this subject line instead of generating one")
+    ap.add_argument("--teaser", help="use this preheader teaser (shown after 'and') instead of generating one")
     ap.add_argument("--since", help="UTC time YYYY-MM-DDTHH:MM:SS; with --min-new, skip unless that many stories were published after it")
     ap.add_argument("--min-new", type=int, default=0)
     a = ap.parse_args()
@@ -357,6 +360,13 @@ def main():
             print(f"{campaign}: not enough new stories since {a.since} ({len(fresh)} < {a.min_new}), skipping")
             return
     leads, trending = pick(posts, a.hours, CONFIG.get("leads", 3), CONFIG.get("trending", 6))
+    if a.lead:
+        chosen = next((p for p in posts if p["slug"] == a.lead), None)
+        if not chosen:
+            sys.exit(f"--lead {a.lead}: no published story with that slug in the last days")
+        leads = [chosen] + [p for p in leads if p["slug"] != a.lead]
+        leads = leads[: CONFIG.get("leads", 3)]
+        trending = [p for p in posts if p not in leads][: CONFIG.get("trending", 6)]
     if not leads:
         sys.exit("no published stories to send")
     poll = None
@@ -369,6 +379,8 @@ def main():
             except requests.RequestException as exc:
                 print(f"  poll skipped: {exc}")
     subject_line = email_subject(leads, campaign)
+    if a.subject or a.teaser:
+        subject_line = (a.subject or subject_line[0], a.teaser or subject_line[1])
     print(f"  subject: {subject_line[0]}\n  teaser:  and {subject_line[1]}")
     subject, preheader, body, text = render(leads, trending, edition, date_et, campaign, view_url, poll, subject_line)
     OUT.mkdir(parents=True, exist_ok=True)

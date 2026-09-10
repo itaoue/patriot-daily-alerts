@@ -18,6 +18,15 @@ on:
       date:
         description: "issue date YYYY-MM-DD (blank = today, ET)"
         default: ""
+      lead:
+        description: "slug of the story to lead with (blank = newest)"
+        default: ""
+      subject:
+        description: "subject line override (blank = generated)"
+        default: ""
+      teaser:
+        description: "preheader teaser override, without the leading 'and' (blank = generated)"
+        default: ""
 concurrency:
   group: newsletter
 jobs:
@@ -50,7 +59,8 @@ jobs:
             SINCE=$(TZ=America/Los_Angeles date -d "today 19:00" -u +%Y-%m-%dT%H:%M:%S)
             SKIP="--skip-if-exists --since $SINCE --min-new 3"   # a manual build earlier the same day wins; wait for today's batch
           fi
-          python tools/build_newsletter.py ${ED:+--edition $ED} ${DT:+--date $DT} $SKIP | tee build.log
+          LEAD="${{ github.event.inputs.lead }}"; SUBJ="${{ github.event.inputs.subject }}"; TEAS="${{ github.event.inputs.teaser }}"
+          python tools/build_newsletter.py ${ED:+--edition $ED} ${DT:+--date $DT} ${LEAD:+--lead "$LEAD"} ${SUBJ:+--subject "$SUBJ"} ${TEAS:+--teaser "$TEAS"} $SKIP | tee build.log
           if grep -q -E "already built|not enough new stories" build.log; then echo "skip=true" >> "$GITHUB_OUTPUT"; else
           echo "campaign=$(ls -t dist/newsletters/*.json | head -1 | xargs -n1 basename | sed 's/.json$//')" >> "$GITHUB_OUTPUT"; fi
       - name: Publish "View online" copy
