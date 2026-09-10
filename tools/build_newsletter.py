@@ -311,6 +311,8 @@ def main():
     ap.add_argument("--hours", type=int, default=16, help="lead stories must be published within this many hours")
     ap.add_argument("--token", default=os.environ.get("PUBLISH_TOKEN", ""))
     ap.add_argument("--skip-if-exists", action="store_true", help="do nothing if this issue was already built (scheduled runs)")
+    ap.add_argument("--since", help="UTC time YYYY-MM-DDTHH:MM:SS; with --min-new, skip unless that many stories were published after it")
+    ap.add_argument("--min-new", type=int, default=0)
     a = ap.parse_args()
     if not a.token:
         sys.exit("PUBLISH_TOKEN is not set")
@@ -323,6 +325,11 @@ def main():
         print(f"{campaign}: already built earlier today, skipping")
         return
     posts = fetch_stories(a.token)
+    if a.since and a.min_new:
+        fresh = [p for p in posts if p["published_at"] >= a.since]
+        if len(fresh) < a.min_new:
+            print(f"{campaign}: not enough new stories since {a.since} ({len(fresh)} < {a.min_new}), skipping")
+            return
     leads, trending = pick(posts, a.hours, CONFIG.get("leads", 3), CONFIG.get("trending", 6))
     if not leads:
         sys.exit("no published stories to send")

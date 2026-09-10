@@ -97,7 +97,7 @@ Railway 的文件系统是临时的，所以后台的封面图字段采用 URL �
 
 ## 内容自动化流水线
 
-每天一批（北京时间早上 8:00，即 UTC 0:00，五篇），由 GitHub Actions 的 `content.yml` 定时执行，**自动发布**（AI 编辑判定 reject 的稿子才留为草稿）：
+每天一批（太平洋时间 19:00，五篇；GitHub 定时不可靠，所以在其后几小时内每半小时重试一次，守卫步骤保证一天只写一批），由 GitHub Actions 的 `content.yml` 定时执行，**自动发布**（AI 编辑判定 reject 的稿子才留为草稿）：
 
 1. `tools/radar.py` 读取 Newsmax、Gateway Pundit、Western Journal、National Review、Washington Examiner、Fox、Daily Wire、Breitbart、NY Post、Daily Caller、Federalist、Just the News 的 RSS（被屏蔽的走 Google News），外加人物关注列表；把同一事件聚成一簇，按“几家同时报道 + 新鲜度 + 是否涉及关注人物”打分，并对照站内最近 14 天的文章去重。
 2. `tools/write_stories.py` 对每个选题：Claude 用联网搜索和网页抓取读 2 到 3 家报道和一手来源 → 写 500 到 800 词原创稿（保守派视角、正文只用短引语并注明出处）→ 第二次 Claude 调用当编辑，逐条核对事实、引语和法律风险 → 配图（公众人物用 Wikimedia 授权照片，否则用 xAI 生成的无人脸新闻图，存入 `src/static/uploads/` 随代码提交）→ `POST /api/publish` 进入后台草稿，编辑意见显示在文章编辑页右侧。
@@ -134,7 +134,7 @@ python tools/write_stories.py --count 1   # 真写一篇进草稿
 
 - `tools/build_newsletter.py`：从站点接口取已发布文章，最近 16 小时内的前三篇做头条，其余做 Also Trending；**邮件主题由 Sonnet 5 按 Middle America News 的公式另写**（8 到 13 词、一个大写词、点名人物、留一个悬念、必须忠于原文），预览文字 = “and 第二条的同款钩子”；网站标题不变；所有链接带 UTM。输出到 `dist/newsletters/<日期>-<am|pm>.html/.txt/.json`，并复制一份到 `src/static/newsletters/` 作为 “View online” 页面。
 - `tools/push_newsletter.py`：推到 BigMailer 建草稿活动（`--ready` 直接标记可发送）。需要 `BIGMAILER_API_KEY`、`BIGMAILER_BRAND_ID`；不设 `BIGMAILER_LIST_ID` 就发给品牌下全部列表，设了（可逗号分隔多个）就只发那些。
-- `.github/workflows/newsletter.yml`：每天北京时间 10:00（UTC 2:00，文章批次两小时后）自动构建、提交 View online 页面、以**草稿**推入 BigMailer，由你在 BigMailer 里手动发送；也可手动触发并选择 `ready=true`。
+- `.github/workflows/newsletter.yml`：每天太平洋时间 21:00 前后（文章批次两小时后，同样带重试；当天新文章不足 3 篇时会等待）自动构建、提交 View online 页面、以**草稿**推入 BigMailer，由你在 BigMailer 里手动发送；也可手动触发并选择 `ready=true`。
 - 底部 **Today's Poll**：每期一个问题（Sonnet 5 根据当天头条生成，失败则用配置里的备选问题轮换），读者点选项即投票，跳到站内 `/poll/<id>/` 结果页看百分比；后台 Polls 页看每期结果。
 - 文案、地址、广告位、投票开关和备选问题在 `content/newsletter/config.json` 里改。
 

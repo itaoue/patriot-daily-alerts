@@ -1,7 +1,9 @@
 name: Newsletter
 on:
   schedule:
-    - cron: "7 2 * * *"    # 10:07 Beijing (02:07 UTC; off the top of the hour) — one daily issue, two hours after the story batch; BigMailer draft
+    # Target: 21:00 America/Los_Angeles, two hours after the story batch. Retried every 30 minutes for a few hours;
+    # the build skips until today's stories exist and never builds the same issue twice.
+    - cron: "7,37 4-8 * * *"
   workflow_dispatch:
     inputs:
       edition:
@@ -43,9 +45,13 @@ jobs:
         run: |
           set -o pipefail
           ED="${{ github.event.inputs.edition }}"; DT="${{ github.event.inputs.date }}"
-          SKIP=""; [ "${{ github.event_name }}" = "schedule" ] && SKIP="--skip-if-exists"   # a manual build earlier the same day wins
+          SKIP=""
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            SINCE=$(TZ=America/Los_Angeles date -d "today 19:00" -u +%Y-%m-%dT%H:%M:%S)
+            SKIP="--skip-if-exists --since $SINCE --min-new 3"   # a manual build earlier the same day wins; wait for today's batch
+          fi
           python tools/build_newsletter.py ${ED:+--edition $ED} ${DT:+--date $DT} $SKIP | tee build.log
-          if grep -q "already built" build.log; then echo "skip=true" >> "$GITHUB_OUTPUT"; else
+          if grep -q -E "already built|not enough new stories" build.log; then echo "skip=true" >> "$GITHUB_OUTPUT"; else
           echo "campaign=$(ls -t dist/newsletters/*.json | head -1 | xargs -n1 basename | sed 's/.json$//')" >> "$GITHUB_OUTPUT"; fi
       - name: Publish "View online" copy
         if: steps.build.outputs.skip != 'true'
