@@ -23,6 +23,7 @@ import html
 import json
 import os
 import pathlib
+import re
 import shutil
 import sys
 import zoneinfo
@@ -381,7 +382,8 @@ def main():
                 print(f"  poll skipped: {exc}")
     subject_line = email_subject(leads, campaign)
     if a.subject or a.teaser:
-        subject_line = (a.subject or subject_line[0], a.teaser or subject_line[1])
+        teaser = re.sub(r"^(?:and|&)\s+", "", (a.teaser or "").strip(), flags=re.I)  # the preheader already starts with "and"
+        subject_line = (a.subject or subject_line[0], teaser or subject_line[1])
     print(f"  subject: {subject_line[0]}\n  teaser:  and {subject_line[1]}")
     subject, preheader, body, text = render(leads, trending, edition, date_et, campaign, view_url, poll, subject_line)
     OUT.mkdir(parents=True, exist_ok=True)
