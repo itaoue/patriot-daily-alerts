@@ -349,7 +349,9 @@ def main():
         sys.exit("PUBLISH_TOKEN is not set")
     now_et = dt.datetime.now(ET)
     edition = a.edition
-    date_et = dt.datetime.strptime(a.date, "%Y-%m-%d").replace(tzinfo=ET) if a.date else now_et
+    # The issue is dated for the morning it is read: a build at 20:00 Pacific (23:00 ET) is the next day's issue,
+    # and a late-night manual build after midnight ET keeps that same date, so the two never collide.
+    date_et = dt.datetime.strptime(a.date, "%Y-%m-%d").replace(tzinfo=ET) if a.date else now_et + dt.timedelta(hours=12)
     campaign = f"{date_et.strftime('%Y-%m-%d')}-{edition}"
     view_url = f"{SITE}/static/newsletters/{campaign}.html"
     if a.skip_if_exists and (STATIC / f"{campaign}.html").exists():
