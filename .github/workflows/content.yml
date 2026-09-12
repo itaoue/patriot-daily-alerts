@@ -1,11 +1,12 @@
 name: Content pipeline
+# Scheduling: the website dispatches this workflow itself at 19:00 America/Los_Angeles (src/scheduler.py, driven by
+# GITHUB_DISPATCH_TOKEN on Railway) with guard=true. GitHub's own cron dropped or delayed most runs, so it is not used.
 on:
-  schedule:
-    # Target: 19:00 America/Los_Angeles (02:00 UTC in summer, 03:00 UTC in winter). GitHub often delays or drops a
-    # single cron, so we retry every 30 minutes for a few hours; the guard step lets only the first run of the day write.
-    - cron: "7,37 2-6 * * *"
   workflow_dispatch:
     inputs:
+      guard:
+        description: "true = one batch per day after 19:00 Pacific (set by the site's scheduler)"
+        default: "false"
       count:
         description: "Stories to write"
         default: "3"
@@ -44,7 +45,7 @@ jobs:
       - name: Guard (one batch per day, after 19:00 Pacific)
         id: guard
         run: |
-          if [ "${{ github.event_name }}" != "schedule" ]; then echo "skip=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ "${{ github.event_name }}" != "schedule" ] && [ "${{ github.event.inputs.guard }}" != "true" ]; then echo "skip=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           TARGET=$(TZ=America/Los_Angeles date -d "today 19:00" -u +%Y-%m-%dT%H:%M:%S)
           NOW=$(date -u +%Y-%m-%dT%H:%M:%S)
           if [[ "$NOW" < "$TARGET" ]]; then echo "before today's 19:00 Pacific target ($TARGET UTC); skipping"; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; fi

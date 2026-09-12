@@ -398,3 +398,29 @@ def test_welcome_email_skipped_without_a_transport(client, monkeypatch):
     client.post("/api/subscribe", json={"email": "notransport@example.com"})
     assert sent == []
     assert Subscriber.query.filter_by(email="notransport@example.com").count() == 1  # signup still succeeds
+
+
+def test_scheduler_claims_once_and_dispatches_when_due(client, monkeypatch):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from src import scheduler
+    from src.main import app as live_app
+
+    calls = []
+    monkeypatch.setattr(scheduler, "dispatch", lambda job, config: calls.append(job["name"]) or 204)
+    live_app.config.update(GITHUB_DISPATCH_TOKEN="x", SCHEDULE_STORIES="19:00", SCHEDULE_NEWSLETTER="20:00")
+    tz = ZoneInfo(live_app.config["SCHEDULE_TZ"])
+    assert scheduler.tick(live_app, datetime(2026, 9, 12, 18, 59, tzinfo=tz)) == []      # not yet due
+    assert scheduler.tick(live_app, datetime(2026, 9, 12, 19, 0, 30, tzinfo=tz)) == ["stories"]
+    assert scheduler.tick(live_app, datetime(2026, 9, 12, 19, 5, tzinfo=tz)) == []       # already claimed today
+    assert scheduler.tick(live_app, datetime(2026, 9, 12, 20, 1, tzinfo=tz)) == ["newsletter"]
+    assert scheduler.tick(live_app, datetime(2026, 9, 12, 23, 30, tzinfo=tz)) == []      # past the catch-up window
+    assert calls == ["stories", "newsletter"]
+    with live_app.app_context():
+        st = scheduler.status(live_app)
+    assert st["enabled"] and "dispatch:stories:2026-09-12" in st["recent"]
+
+
+def test_scheduler_status_endpoint_requires_token(client):
+    assert client.get("/api/scheduler").status_code == 401

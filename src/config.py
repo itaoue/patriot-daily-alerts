@@ -36,6 +36,15 @@ class Config:
 
     GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", "G-7J6WNSF6DJ")  # GA4 property 371513253
 
+    # In-app scheduler: the site triggers the GitHub workflows itself (GitHub's cron kept dropping runs).
+    # Needs a fine-grained token with Actions: read and write on the repo; times are HH:MM in SCHEDULE_TZ.
+    GITHUB_DISPATCH_TOKEN = os.environ.get("GITHUB_DISPATCH_TOKEN", "")
+    GITHUB_REPO = os.environ.get("GITHUB_REPO", "itaoue/patriot-daily-alerts")
+    GITHUB_REF = os.environ.get("GITHUB_REF", "main")
+    SCHEDULE_TZ = os.environ.get("SCHEDULE_TZ", "America/Los_Angeles")
+    SCHEDULE_STORIES = os.environ.get("SCHEDULE_STORIES", "19:00")      # 5 stories, published
+    SCHEDULE_NEWSLETTER = os.environ.get("SCHEDULE_NEWSLETTER", "20:00")  # daily issue -> BigMailer draft
+
     POSTS_PER_PAGE = 12
     # editor notifications (new comments, contact messages): set NOTIFY_EMAIL plus RESEND_API_KEY or SMTP_*
     NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", "")

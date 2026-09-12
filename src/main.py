@@ -96,6 +96,10 @@ def create_app(config_object=Config) -> Flask:
         if app.config["AUTO_SEED"]:
             seed_if_empty()
 
+    from src.scheduler import start as start_scheduler
+
+    start_scheduler(app)
+
     @app.cli.command("seed")
     def seed_cmd():
         """Seed the database from tools/seed_data.json if it is empty."""

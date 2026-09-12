@@ -122,6 +122,16 @@ def _pipeline_authorized() -> bool:
     return bool(token) and secrets.compare_digest(supplied, token)
 
 
+@api_bp.route("/scheduler")
+def scheduler_status():
+    """What the in-app workflow scheduler is set to and what it has dispatched lately."""
+    if not _pipeline_authorized():
+        return jsonify(error="unauthorized"), 401
+    from src.scheduler import status
+
+    return jsonify(status(current_app._get_current_object()))
+
+
 @api_bp.route("/posts/recent")
 def recent_posts():
     """Titles of every story (any status) from the last N days, so the pipeline can avoid repeats."""

@@ -1,11 +1,12 @@
 name: Newsletter
+# Scheduling: the website dispatches this workflow itself at 20:00 America/Los_Angeles (src/scheduler.py, driven by
+# GITHUB_DISPATCH_TOKEN on Railway) with guard=true. GitHub's own cron dropped or delayed most runs, so it is not used.
 on:
-  schedule:
-    # Target: 21:00 America/Los_Angeles, two hours after the story batch. Retried every 30 minutes for a few hours;
-    # the build skips until today's stories exist and never builds the same issue twice.
-    - cron: "7,37 4-8 * * *"
   workflow_dispatch:
     inputs:
+      guard:
+        description: "true = skip if today's issue exists or fewer than 3 stories since 19:00 Pacific (set by the site's scheduler)"
+        default: "false"
       edition:
         description: "daily, am or pm (blank = daily)"
         default: ""
@@ -57,10 +58,11 @@ jobs:
           LEAD: ${{ github.event.inputs.lead }}
           SUBJ: ${{ github.event.inputs.subject }}
           TEAS: ${{ github.event.inputs.teaser }}
+          GUARD: ${{ github.event.inputs.guard }}
         run: |
           set -o pipefail
           SKIP=""
-          if [ "${{ github.event_name }}" = "schedule" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "$GUARD" = "true" ]; then
             SINCE=$(TZ=America/Los_Angeles date -d "today 19:00" -u +%Y-%m-%dT%H:%M:%S)
             SKIP="--skip-if-exists --since $SINCE --min-new 3"   # a manual build earlier the same day wins; wait for today's batch
           fi
