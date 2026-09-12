@@ -305,7 +305,7 @@ def render(leads, trending, edition, date_et, campaign, view_url, poll=None, sub
 <tr><td align="center" style="padding:18px 8px;">
 <table role="presentation" class="wrap" width="600" border="0" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:{PAPER};">
 
-  <tr><td style="padding:8px 25px 0;font-family:{FONT};font-size:11px;color:{GREY};text-align:right;">If you think this email is sent to you by mistake, please click <a href="*|UNSUB|*" target="_blank" style="color:{GREY};text-decoration:underline;">Unsubscribe</a> from this list immediately.</td></tr>
+  <tr><td style="padding:8px 25px 0;font-family:{FONT};font-size:11px;color:{GREY};text-align:center;">If you think this email is sent to you by mistake, please click <a href="*|UNSUB|*" target="_blank" style="color:{GREY};text-decoration:underline;">Unsubscribe</a> from this list immediately.</td></tr>
   <tr><td align="center" style="padding:14px 25px 12px;"><a href="{SITE}/?utm_source=newsletter&utm_medium=email&utm_campaign={campaign}" target="_blank"><img src="{SITE}/static/img/logo.png" width="360" alt="{esc(CONFIG["from_name"])}" style="display:block;width:360px;max-width:100%;height:auto;"></a></td></tr>
   <tr><td bgcolor="{NAVY}" style="background:{NAVY};padding:10px 25px;font-family:{FONT};font-size:12px;line-height:130%;color:#ffffff;text-align:center;letter-spacing:.08em;text-transform:uppercase;">
     <strong>{esc(CONFIG["tagline"])}</strong><br><span style="color:#c9d1e3;letter-spacing:.04em;">{date_et.strftime("%A, %B %-d, %Y")}</span></td></tr>
