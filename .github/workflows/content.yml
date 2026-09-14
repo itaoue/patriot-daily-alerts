@@ -76,8 +76,9 @@ jobs:
           python - <<'PY'
           import json
           a = json.load(open("content/radar/used.json")); b = json.load(open("/tmp/used.local.json"))
-          for k in ("urls", "titles"):
+          for k in ("urls", "titles", "photos"):
               a[k] = list(dict.fromkeys(a.get(k, []) + b.get(k, [])))
+          a["photos"] = a["photos"][-60:]
           json.dump(a, open("content/radar/used.json", "w"), indent=1)
           PY
           git add src/static/uploads content/radar/used.json

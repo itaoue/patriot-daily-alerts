@@ -107,6 +107,22 @@ def norm(t):
 RADAR_MARK = "Radar headline: "
 
 
+def fuzzy_overlap(a, b):
+    """Share of the shorter title's words that appear in the other, where 'Zelensky' ~ 'Zelenskyy' (ratio >= 0.85)."""
+    import difflib
+
+    wa = [w for w in re.findall(r"[a-z0-9]+", a.lower()) if len(w) > 3]
+    wb = [w for w in re.findall(r"[a-z0-9]+", b.lower()) if len(w) > 3]
+    if not wa or not wb:
+        return 0.0
+    hits = sum(1 for x in wa if any(x == y or difflib.SequenceMatcher(None, x, y).ratio() >= 0.85 for y in wb))
+    return hits / min(len(wa), len(wb))
+
+
+def same_story(title, others, threshold=0.6):
+    return next((o for o in others if fuzzy_overlap(title, o) >= threshold), None)
+
+
 def radar_headlines(site_recent):
     """Original radar headlines of stories already on the site (stored in editor notes), for dedupe."""
     out = set()
@@ -129,17 +145,21 @@ def choose(clusters, count, used, site_recent):
              and not any(overlap(norm(c["title"]), t) >= 0.6 for t in seen if t)
              and not any(o["url"] in used_urls for o in c["outlets"])]
     picks, cats = [], set()
+
+    def dup_of_pick(c):  # the radar clusters by exact words, so "Zelensky" and "Zelenskyy" arrive as two clusters
+        return same_story(c["title"], [p["title"] for p in picks])
+
     for c in fresh:  # radar order = best first; spread across sections
         if len(picks) >= count:
             break
-        if c["category"] in cats:
+        if c["category"] in cats or dup_of_pick(c):
             continue
         picks.append(c)
         cats.add(c["category"])
     for c in fresh:
         if len(picks) >= count:
             break
-        if c not in picks:
+        if c not in picks and not dup_of_pick(c):
             picks.append(c)
     return picks[:count]
 
@@ -369,7 +389,7 @@ def main():
         sys.exit("PUBLISH_TOKEN is not set")
     import anthropic
     client = anthropic.Anthropic(max_retries=5)
-    made = []
+    made, made_titles = [], []
     for c in picks:
         print(f"\n== {c['title'][:90]}")
         USAGE["story"] = 0.0
@@ -386,6 +406,12 @@ def main():
                 art = revise(client, art, verdict, notes)
                 revised = art.get("changes", [])
                 print(f"  revised ({len(revised)} fixes)")
+            twin = same_story(art["title"], [p["title"] for p in recent] + made_titles)
+            if twin:
+                print(f"  duplicate of '{twin}', not publishing")
+                used["urls"] += [o["url"] for o in c["outlets"]]
+                used["titles"].append(c["title"])
+                continue
             slug = re.sub(r"[^a-z0-9-]", "", art["slug"].lower().replace(" ", "-")).strip("-")[:80]
             image_url, credit = attach_image(art, slug, a.date, a.no_image, used)
             notes_out = f"Editor verdict: {verdict['verdict'].upper()}. {verdict['notes']}"
@@ -404,6 +430,7 @@ def main():
             used["urls"] += [o["url"] for o in c["outlets"]]
             used["titles"].append(c["title"])
             made.append(res["slug"])
+            made_titles.append(art["title"])
         except Exception as exc:  # noqa: BLE001
             traceback.print_exc()
             print(f"  FAILED: {exc.__class__.__name__}: {str(exc)[:300]}")

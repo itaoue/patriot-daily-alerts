@@ -70,12 +70,17 @@ def fetch(query, out_path, anchor=0.2, exclude=(), existing_dir=None):
     for c in candidates(query):
         if c["title"] in exclude:
             continue
+        if (c["height"] or 0) > (c["width"] or 0):
+            continue  # a portrait-orientation photo cropped to 1200x630 leaves only a strip of face; generate art instead
         with urllib.request.urlopen(urllib.request.Request(c["url"], headers=UA), timeout=90) as r:
             data = r.read()
-        if hashlib.md5(data).hexdigest() in hashes:  # noqa: S324
-            continue
         out_path.write_bytes(data)
         fit(out_path, 1200, 630, anchor)
+        # compare what is actually stored: the same source always crops to the same bytes, so this catches the
+        # same Commons file arriving under a different title (thumbnail vs. original, re-uploads, crops)
+        if hashlib.md5(out_path.read_bytes()).hexdigest() in hashes:  # noqa: S324
+            out_path.unlink()
+            continue
         return c["credit"], c["title"]
     return None, None
 
