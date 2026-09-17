@@ -14,10 +14,16 @@ def migrate_columns() -> None:
     """Add columns introduced after the first deploy (create_all never alters existing tables)."""
     from sqlalchemy import inspect, text
 
-    existing = {c["name"] for c in inspect(db.engine).get_columns("posts")}
-    for name in ("editor_notes", "sources"):
-        if name not in existing:
-            db.session.execute(text(f"ALTER TABLE posts ADD COLUMN {name} TEXT DEFAULT ''"))
+    added = {
+        "posts": [("editor_notes", "TEXT DEFAULT ''"), ("sources", "TEXT DEFAULT ''")],
+        "offers": [("audience", "VARCHAR(16) DEFAULT 'all'")],
+        "offer_clicks": [("segment", "VARCHAR(8) DEFAULT ''")],
+    }
+    for table, columns in added.items():
+        existing = {c["name"] for c in inspect(db.engine).get_columns(table)}
+        for name, ddl in columns:
+            if name not in existing:
+                db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
     db.session.commit()
 
 

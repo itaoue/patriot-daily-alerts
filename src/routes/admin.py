@@ -4,7 +4,22 @@ from functools import wraps
 
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 
-from src.models import Category, Comment, ContactMessage, Page, Poll, Post, Subscriber, db, utcnow
+from src.models import (
+    OFFER_AUDIENCES,
+    SAVINGS_BANDS,
+    Category,
+    Comment,
+    ContactMessage,
+    Offer,
+    OfferClick,
+    Page,
+    Poll,
+    Post,
+    QualifierAnswer,
+    Subscriber,
+    db,
+    utcnow,
+)
 from src.utils import make_excerpt, sanitize_html, slugify
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -222,8 +237,71 @@ def import_status():
 @admin_bp.route("/polls/")
 @login_required
 def polls():
+    from sqlalchemy import func
+
     rows = Poll.query.order_by(Poll.created_at.desc()).limit(60).all()
-    return render_template("admin/polls.html", polls=[(p, p.results(), p.votes.count()) for p in rows])
+    counts = dict(db.session.query(QualifierAnswer.answer, func.count()).filter(QualifierAnswer.question == "savings")
+                  .group_by(QualifierAnswer.answer).all())
+    total = sum(counts.values())
+    savings = [(label, counts.get(key, 0), round(100 * counts.get(key, 0) / total) if total else 0) for key, label, _ in SAVINGS_BANDS]
+    return render_template("admin/polls.html", polls=[(p, p.results(), p.votes.count()) for p in rows],
+                           savings=savings, savings_total=total)
+
+
+@admin_bp.route("/offers/")
+@login_required
+def offers():
+    from datetime import timedelta
+
+    from sqlalchemy import func
+
+    human = db.session.query(OfferClick.offer_id, func.count()).filter(OfferClick.is_bot.is_(False))
+    total = dict(human.group_by(OfferClick.offer_id).all())
+    week = dict(human.filter(OfferClick.created_at >= utcnow() - timedelta(days=7)).group_by(OfferClick.offer_id).all())
+    bots = dict(db.session.query(OfferClick.offer_id, func.count()).filter(OfferClick.is_bot.is_(True)).group_by(OfferClick.offer_id).all())
+    by_segment = {}
+    for offer_id, segment, n in (human.with_entities(OfferClick.offer_id, OfferClick.segment, func.count())
+                                 .group_by(OfferClick.offer_id, OfferClick.segment).all()):
+        by_segment[(offer_id, segment or "")] = n
+    rows = Offer.query.order_by(Offer.active.desc(), Offer.weight.desc(), Offer.id.desc()).all()
+    return render_template("admin/offers.html", offers=rows, total=total, week=week, bots=bots, by_segment=by_segment,
+                           audiences=OFFER_AUDIENCES, bands=[("", "Not answered", None)] + SAVINGS_BANDS)
+
+
+@admin_bp.route("/offers/new", methods=["GET", "POST"])
+@admin_bp.route("/offers/<int:offer_id>", methods=["GET", "POST"])
+@login_required
+def edit_offer(offer_id=None):
+    offer = Offer.query.get_or_404(offer_id) if offer_id else Offer(label="Sponsored", cta="Learn more", active=True, audience="all")
+    if request.method == "POST":
+        f = request.form
+        if f.get("action") == "delete" and offer.id:
+            db.session.delete(offer)
+            db.session.commit()
+            flash("Offer deleted.", "ok")
+            return redirect(url_for("admin.offers"))
+        url = f.get("url", "").strip()
+        if not url.startswith(("https://", "http://")):
+            flash("Destination URL must start with https://", "error")
+            return render_template("admin/edit_offer.html", offer=offer, audiences=OFFER_AUDIENCES)
+        offer.name = f.get("name", "").strip()[:120] or f.get("headline", "").strip()[:120]
+        offer.label = f.get("label", "").strip()[:40] or "Sponsored"
+        offer.headline = f.get("headline", "").strip()[:200]
+        offer.blurb = f.get("blurb", "").strip()[:300]
+        offer.image_url = f.get("image_url", "").strip()[:600]
+        offer.cta = f.get("cta", "").strip()[:40] or "Learn more"
+        offer.url = url[:1000]
+        offer.weight = f.get("weight", 0, type=int)
+        offer.active = f.get("active") == "1"
+        offer.audience = f.get("audience") if f.get("audience") in OFFER_AUDIENCES else "all"
+        if not offer.headline:
+            flash("Headline is required.", "error")
+            return render_template("admin/edit_offer.html", offer=offer, audiences=OFFER_AUDIENCES)
+        db.session.add(offer)
+        db.session.commit()
+        flash("Offer saved.", "ok")
+        return redirect(url_for("admin.offers"))
+    return render_template("admin/edit_offer.html", offer=offer, audiences=OFFER_AUDIENCES)
 
 
 @admin_bp.route("/comments/")

@@ -133,6 +133,82 @@ class PollVote(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow)
 
 
+# post-vote qualifier: "Roughly how much do you have saved for retirement?" (key, label, lowest dollar amount)
+SAVINGS_BANDS = [
+    ("lt20k", "Under $20,000", 0),
+    ("20k", "$20,000 – $50,000", 20_000),
+    ("50k", "$50,000 – $250,000", 50_000),
+    ("250k", "Over $250,000", 250_000),
+    ("na", "Prefer not to say", None),
+]
+SAVINGS_BAND_KEYS = {k for k, _, _ in SAVINGS_BANDS}
+OFFER_AUDIENCES = {
+    "all": "Everyone",
+    "not_low": "Everyone except under $20k",
+    "20k": "Only readers who said $20k+",
+    "50k": "Only readers who said $50k+",
+}
+
+
+def offer_visible(audience: str, band: str) -> bool:
+    """band is the reader's SAVINGS_BANDS key, or "" if they haven't answered."""
+    floor = next((amt for k, _, amt in SAVINGS_BANDS if k == band), None)
+    if audience == "not_low":
+        return band != "lt20k"
+    if audience == "20k":
+        return floor is not None and floor >= 20_000
+    if audience == "50k":
+        return floor is not None and floor >= 50_000
+    return True
+
+
+class QualifierAnswer(db.Model):
+    """One reader's answer to the post-vote savings question, keyed by a first-party browser cookie."""
+
+    __tablename__ = "qualifier_answers"
+    id = db.Column(db.Integer, primary_key=True)
+    rid = db.Column(db.String(32), nullable=False, index=True)  # random id in the "rid" cookie
+    voter = db.Column(db.String(64), default="")
+    poll_id = db.Column(db.Integer, nullable=True)
+    question = db.Column(db.String(20), default="savings", index=True)
+    answer = db.Column(db.String(8), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=utcnow, index=True)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+
+class Offer(db.Model):
+    """Sponsored offer card shown under poll results; clicks go through /go/<id>/ so they can be counted."""
+
+    __tablename__ = "offers"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)  # internal, e.g. "Goldco IRA kit - CPL"
+    label = db.Column(db.String(40), default="Sponsored")
+    headline = db.Column(db.String(200), nullable=False)
+    blurb = db.Column(db.String(300), default="")
+    image_url = db.Column(db.String(600), default="")
+    cta = db.Column(db.String(40), default="Learn more")
+    url = db.Column(db.String(1000), nullable=False)  # may contain {subid}, replaced with pda-o<offer>-p<poll>-c<click>
+    active = db.Column(db.Boolean, default=True, index=True)
+    weight = db.Column(db.Integer, default=0)  # higher shows first
+    audience = db.Column(db.String(16), default="all")  # key of OFFER_AUDIENCES: who sees this card, by savings answer
+    impressions = db.Column(db.Integer, default=0)  # human page views that showed this card
+    created_at = db.Column(db.DateTime, default=utcnow)
+    clicks = db.relationship("OfferClick", back_populates="offer", lazy="dynamic", cascade="all, delete-orphan")
+
+
+class OfferClick(db.Model):
+    __tablename__ = "offer_clicks"
+    id = db.Column(db.Integer, primary_key=True)
+    offer_id = db.Column(db.Integer, db.ForeignKey("offers.id"), nullable=False, index=True)
+    offer = db.relationship("Offer", back_populates="clicks")
+    poll_id = db.Column(db.Integer, nullable=True, index=True)
+    voter = db.Column(db.String(64), default="")
+    user_agent = db.Column(db.String(300), default="")
+    is_bot = db.Column(db.Boolean, default=False, index=True)  # link scanners / crawlers: kept but excluded from stats
+    segment = db.Column(db.String(8), default="")  # reader's savings band at click time ("" = not answered)
+    created_at = db.Column(db.DateTime, default=utcnow, index=True)
+
+
 class Comment(db.Model):
     """Reader comment on a story. Held as "pending" until approved in the newsroom (unless COMMENTS_AUTO_APPROVE)."""
 

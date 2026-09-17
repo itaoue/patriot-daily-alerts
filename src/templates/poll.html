@@ -23,7 +23,35 @@
         {% for r in results %}<a class="btn" href="{{ url_for('public.poll_vote', poll_id=poll.id, choice=r.index) }}">{{ r.label }}</a> {% endfor %}
       </div>
       {% endif %}
-      {% if sponsor and sponsor.enabled %}
+      {% if not band %}
+      <form class="qualifier" method="post" action="{{ url_for('public.poll_qualify', poll_id=poll.id) }}">
+        <p class="kicker">One more quick question</p>
+        <h2 class="qualifier__q">Roughly how much do you have saved for retirement, counting IRAs, 401(k)s and savings?</h2>
+        <p class="qualifier__note">Optional and anonymous. It helps us show sponsors that are relevant to you.</p>
+        <input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+        <div class="qualifier__opts">
+          {% for key, label, _ in savings_bands %}<button class="btn btn--ghost" name="savings" value="{{ key }}">{{ label }}</button>{% endfor %}
+        </div>
+      </form>
+      {% elif just_answered %}
+      <p class="alert alert--ok">Thanks for answering.</p>
+      {% endif %}
+      {% if offers %}
+      <section class="offers" id="offers" aria-label="Sponsored offers">
+        <p class="offers__title">From our sponsors</p>
+        {% for o in offers %}
+        <a class="offer" href="{{ url_for('public.offer_click', offer_id=o.id, p=poll.id) }}" rel="nofollow sponsored noopener" target="_blank">
+          {% if o.image_url %}<img class="offer__img" src="{{ o.image_url }}" alt="" loading="lazy" width="120" height="90">{% endif %}
+          <span class="offer__body">
+            <span class="offer__label">{{ o.label or 'Sponsored' }}</span>
+            <strong class="offer__headline">{{ o.headline }}</strong>
+            {% if o.blurb %}<span class="offer__blurb">{{ o.blurb }}</span>{% endif %}
+            <span class="btn offer__cta">{{ o.cta or 'Learn more' }}</span>
+          </span>
+        </a>
+        {% endfor %}
+      </section>
+      {% elif sponsor and sponsor.enabled %}
       <div class="inline-signup">
         <p class="kicker">{{ sponsor.label }}</p>
         <h3>{{ sponsor.headline }}</h3>

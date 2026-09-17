@@ -1,15 +1,32 @@
 import os
+import re
 from datetime import timedelta
 
 from flask import Blueprint, Response, abort, current_app, redirect, render_template, request, send_from_directory, session, url_for
 from sqlalchemy import or_
 
-from src.models import Category, Comment, Page, Poll, PollVote, Post, Subscriber, db, utcnow
+from src.models import (
+    SAVINGS_BAND_KEYS,
+    SAVINGS_BANDS,
+    Category,
+    Comment,
+    Offer,
+    OfferClick,
+    Page,
+    Poll,
+    PollVote,
+    Post,
+    QualifierAnswer,
+    Subscriber,
+    db,
+    offer_visible,
+    utcnow,
+)
 from src.utils import strip_tags, valid_email
 
 public_bp = Blueprint("public", __name__)
 
-RESERVED_SLUGS = {"admin", "api", "static", "feed", "search", "category", "sitemap.xml", "robots.txt", "join", "welcome"}
+RESERVED_SLUGS = {"admin", "api", "static", "feed", "search", "category", "sitemap.xml", "robots.txt", "join", "welcome", "go", "poll"}
 
 
 def published_posts():
@@ -112,7 +129,7 @@ def sitemap():
 
 @public_bp.route("/robots.txt")
 def robots():
-    body = f"User-agent: *\nDisallow: /admin/\nDisallow: /api/\nSitemap: {current_app.config['SITE_URL']}/sitemap.xml\n"
+    body = f"User-agent: *\nDisallow: /admin/\nDisallow: /api/\nDisallow: /go/\nSitemap: {current_app.config['SITE_URL']}/sitemap.xml\n"
     return Response(body, mimetype="text/plain")
 
 
@@ -128,8 +145,16 @@ def _voter_id() -> str:
 def poll_results(poll_id):
     poll = Poll.query.get_or_404(poll_id)
     voted = request.cookies.get(f"pv{poll.id}")
+    band = _savings_band()
+    offers = [o for o in Offer.query.filter_by(active=True).order_by(Offer.weight.desc(), Offer.id.desc())
+              if offer_visible(o.audience or "all", band)][:3]
+    if offers and not _is_bot():
+        Offer.query.filter(Offer.id.in_([o.id for o in offers])).update(
+            {Offer.impressions: Offer.impressions + 1}, synchronize_session=False)
+        db.session.commit()
     return render_template("poll.html", poll=poll, results=poll.results(), total=poll.votes.count(), voted=voted,
-                           just_voted=request.args.get("voted") is not None, latest=most_read(4),
+                           just_voted=request.args.get("voted") is not None, latest=most_read(4), offers=offers,
+                           band=band, savings_bands=SAVINGS_BANDS, just_answered=request.args.get("answered") is not None,
                            sponsor=current_app.config.get("POLL_SPONSOR"))
 
 
@@ -146,6 +171,64 @@ def poll_vote(poll_id, choice):
         db.session.commit()
     resp = redirect(url_for("public.poll_results", poll_id=poll.id, voted=1))
     resp.set_cookie(f"pv{poll.id}", str(choice), max_age=60 * 60 * 24 * 90, samesite="Lax")
+    return resp
+
+
+def _savings_band() -> str:
+    band = request.cookies.get("q_sav", "")
+    return band if band in SAVINGS_BAND_KEYS else ""
+
+
+@public_bp.route("/poll/<int:poll_id>/qualify", methods=["POST"])
+def poll_qualify(poll_id):
+    """Optional post-vote question (savings band). Decides which offer cards the reader sees; one row per browser."""
+    import secrets
+
+    poll = Poll.query.get_or_404(poll_id)
+    answer = request.form.get("savings", "")
+    if answer not in SAVINGS_BAND_KEYS or request.form.get("website"):  # honeypot
+        return redirect(url_for("public.poll_results", poll_id=poll.id))
+    rid = request.cookies.get("rid", "")
+    if not (len(rid) == 32 and rid.isalnum()):
+        rid = secrets.token_hex(16)
+    row = QualifierAnswer.query.filter_by(rid=rid, question="savings").first()
+    if row:
+        row.answer, row.poll_id = answer, poll.id
+    else:
+        db.session.add(QualifierAnswer(rid=rid, voter=_voter_id(), poll_id=poll.id, question="savings", answer=answer))
+    db.session.commit()
+    resp = redirect(url_for("public.poll_results", poll_id=poll.id, answered=1, _anchor="offers"))
+    year = 60 * 60 * 24 * 365
+    resp.set_cookie("rid", rid, max_age=year, samesite="Lax", httponly=True)
+    resp.set_cookie("q_sav", answer, max_age=year, samesite="Lax", httponly=True)
+    return resp
+
+
+# email security scanners (Outlook Safe Links, Proofpoint, Mimecast, Barracuda...) and crawlers pre-fetch links
+_BOT_UA = re.compile(r"bot|crawl|spider|slurp|preview|scan|proofpoint|mimecast|barracuda|safelinks|python|curl|wget|"
+                     r"httpclient|okhttp|headless|phantom|monitor|checker|fetch", re.I)
+
+
+def _is_bot() -> bool:
+    ua = request.user_agent.string or ""
+    return request.method == "HEAD" or not ua or bool(_BOT_UA.search(ua))
+
+
+@public_bp.route("/go/<int:offer_id>/")
+def offer_click(offer_id):
+    """Tracked redirect for offer cards. ?p=<poll id> ties the click to the poll page it came from."""
+    offer = Offer.query.get_or_404(offer_id)
+    if not offer.active:
+        return redirect(url_for("public.home"))
+    poll_id = request.args.get("p", type=int)
+    click = OfferClick(offer_id=offer.id, poll_id=poll_id, voter=_voter_id(),
+                       user_agent=(request.user_agent.string or "")[:300], is_bot=_is_bot(), segment=_savings_band())
+    db.session.add(click)
+    db.session.commit()
+    subid = f"pda-o{offer.id}-p{poll_id or 0}-c{click.id}-s{click.segment or 'none'}"
+    resp = redirect(offer.url.replace("{subid}", subid), 302)
+    resp.headers["X-Robots-Tag"] = "noindex, nofollow"
+    resp.headers["Cache-Control"] = "no-store"
     return resp
 
 

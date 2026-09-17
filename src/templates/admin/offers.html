@@ -1,0 +1,45 @@
+{% extends "admin/base.html" %}
+{% block title %}Offers{% if offers %}
+<h2 style="margin-top:32px">Clicks by savings answer</h2>
+<p>Human clicks, all time. Compare with qualified leads in the network report (match on the <code>-s…</code> part of the subid).</p>
+<table>
+  <thead><tr><th>Offer</th>{% for key, label, _ in bands %}<th>{{ label }}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for o in offers %}<tr><td>{{ o.name }}</td>{% for key, label, _ in bands %}<td>{{ by_segment.get((o.id, key), 0) }}</td>{% endfor %}</tr>{% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="ah-row"><h1>Offers</h1><a class="btn" href="{{ url_for('admin.edit_offer') }}">New offer</a></div>
+<p>Up to 3 active offers (highest weight first) show under poll results. Clicks go through <code>/go/&lt;id&gt;/</code>; put <code>{subid}</code> in the destination URL to pass the click id and the reader's savings answer (e.g. <code>pda-o3-p12-c456-s50k</code>) to the affiliate network. Email link scanners and crawlers are logged separately and left out of the numbers.</p>
+<table>
+  <thead><tr><th>Offer</th><th>Status</th><th>Audience</th><th>Weight</th><th>Impressions</th><th>Clicks 7d</th><th>Clicks total</th><th>CTR</th><th>Bot hits</th></tr></thead>
+  <tbody>
+  {% for o in offers %}
+    {% set clicks = total.get(o.id, 0) %}
+    <tr>
+      <td><a href="{{ url_for('admin.edit_offer', offer_id=o.id) }}"><b>{{ o.name }}</b></a><br><span style="color:var(--muted)">{{ o.headline }}</span></td>
+      <td>{{ 'Active' if o.active else 'Paused' }}</td>
+      <td>{{ audiences.get(o.audience or 'all', o.audience) }}</td>
+      <td>{{ o.weight }}</td>
+      <td>{{ '{:,}'.format(o.impressions or 0) }}</td>
+      <td>{{ week.get(o.id, 0) }}</td>
+      <td>{{ clicks }}</td>
+      <td>{{ '%.1f'|format(100 * clicks / o.impressions) ~ '%' if o.impressions else '—' }}</td>
+      <td>{{ bots.get(o.id, 0) }}</td>
+    </tr>
+  {% else %}<tr><td colspan="9">No offers yet.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% if offers %}
+<h2 style="margin-top:32px">Clicks by savings answer</h2>
+<p>Human clicks, all time. Compare with qualified leads in the network report (match on the <code>-s…</code> part of the subid).</p>
+<table>
+  <thead><tr><th>Offer</th>{% for key, label, _ in bands %}<th>{{ label }}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for o in offers %}<tr><td>{{ o.name }}</td>{% for key, label, _ in bands %}<td>{{ by_segment.get((o.id, key), 0) }}</td>{% endfor %}</tr>{% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

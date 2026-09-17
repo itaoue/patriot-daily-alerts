@@ -232,6 +232,113 @@ def test_poll_create_vote_results(client):
     assert client.get(f"/poll/{pid}/").status_code == 404
 
 
+def test_offer_cards_and_click_tracking(client):
+    from flask import current_app
+
+    from src.models import Offer, OfferClick, Poll, db
+
+    current_app.config["PUBLISH_TOKEN"] = "t0k3n"
+    pid = client.post("/api/polls", json={"campaign": "offers-test", "question": "Offer poll?", "options": ["Yes", "No"]},
+                      headers={"Authorization": "Bearer t0k3n"}).get_json()["id"]
+    live = Offer(name="Gold kit", headline="Free gold guide", url="https://aff.example/c?sub={subid}", weight=5)
+    paused = Offer(name="Old", headline="Paused offer", url="https://aff.example/old", active=False)
+    db.session.add_all([live, paused])
+    db.session.commit()
+
+    ua = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Safari/604.1"}
+    page = client.get(f"/poll/{pid}/", headers=ua)
+    assert b"Free gold guide" in page.data and b"Paused offer" not in page.data
+    assert f"/go/{live.id}/?p={pid}".encode() in page.data
+    client.get(f"/poll/{pid}/", headers={"User-Agent": "Mozilla/5.0 (compatible; Proofpoint URL Defense)"})
+    db.session.refresh(live)
+    assert live.impressions == 1  # scanner view not counted
+
+    r = client.get(f"/go/{live.id}/?p={pid}", headers=ua)
+    click = OfferClick.query.filter_by(offer_id=live.id).one()
+    assert r.status_code == 302 and r.headers["Location"] == f"https://aff.example/c?sub=pda-o{live.id}-p{pid}-c{click.id}-snone"
+    assert click.poll_id == pid and not click.is_bot
+    client.get(f"/go/{live.id}/", headers={"User-Agent": "python-requests/2.31"})
+    assert OfferClick.query.filter_by(offer_id=live.id, is_bot=True).count() == 1
+    assert client.get(f"/go/{paused.id}/", headers=ua).headers["Location"].endswith("/")
+    assert client.get("/go/99999/").status_code == 404
+    assert b"Disallow: /go/" in client.get("/robots.txt").data
+
+    client.post("/admin/login", data={"password": "ci-password"})
+    with client.session_transaction() as s:
+        csrf = s["csrf"]
+    listing = client.get("/admin/offers/")
+    assert listing.status_code == 200 and b"Gold kit" in listing.data and b"100.0%" in listing.data
+    r = client.post("/admin/offers/new", data={"csrf": csrf, "headline": "Bad", "url": "javascript:alert(1)", "active": "1"})
+    assert b"must start with https" in r.data and Offer.query.filter_by(headline="Bad").count() == 0
+    r = client.post("/admin/offers/new", data={"csrf": csrf, "headline": "Medicare guide", "url": "https://m.example/", "active": "1"})
+    assert r.status_code == 302 and Offer.query.filter_by(headline="Medicare guide").one().name == "Medicare guide"
+    client.post(f"/admin/offers/{live.id}", data={"csrf": csrf, "action": "delete"})
+    assert db.session.get(Offer, live.id) is None and OfferClick.query.filter_by(offer_id=live.id).count() == 0
+    db.session.delete(db.session.get(Poll, pid))
+    db.session.commit()
+
+
+def test_post_vote_savings_question_targets_offers(client):
+    from flask import current_app
+
+    from src.models import Offer, OfferClick, Poll, QualifierAnswer, db, offer_visible
+
+    assert offer_visible("all", "") and offer_visible("not_low", "") and not offer_visible("not_low", "lt20k")
+    assert not offer_visible("50k", "") and not offer_visible("50k", "na") and not offer_visible("50k", "20k")
+    assert offer_visible("50k", "50k") and offer_visible("50k", "250k") and offer_visible("20k", "20k")
+
+    current_app.config["PUBLISH_TOKEN"] = "t0k3n"
+    pid = client.post("/api/polls", json={"campaign": "qualifier-test", "question": "Q poll?", "options": ["Yes", "No"]},
+                      headers={"Authorization": "Bearer t0k3n"}).get_json()["id"]
+    for o in Offer.query.all():
+        o.active = False
+    gold = Offer(name="Goldco", headline="Free gold IRA kit", url="https://g.example/?s={subid}", audience="50k", weight=9)
+    news = Offer(name="Newsletter", headline="Try our partner newsletter", url="https://n.example/", audience="all")
+    db.session.add_all([gold, news])
+    db.session.commit()
+    ua = {"User-Agent": "Mozilla/5.0 Safari"}
+    client.delete_cookie("q_sav")
+    client.delete_cookie("rid")
+
+    page = client.get(f"/poll/{pid}/", headers=ua).data
+    assert b"saved for retirement" in page and b"Try our partner newsletter" in page and b"Free gold IRA kit" not in page
+
+    client.post(f"/poll/{pid}/qualify", data={"savings": "bogus"}, headers=ua)
+    assert QualifierAnswer.query.count() == 0
+    client.post(f"/poll/{pid}/qualify", data={"savings": "250k", "website": "bot"}, headers=ua)  # honeypot
+    assert QualifierAnswer.query.count() == 0
+
+    r = client.post(f"/poll/{pid}/qualify", data={"savings": "lt20k"}, headers=ua)
+    assert r.status_code == 302 and r.headers["Location"].endswith(f"/poll/{pid}/?answered=1#offers")
+    page = client.get(f"/poll/{pid}/?answered=1", headers=ua).data
+    assert b"saved for retirement" not in page and b"Thanks for answering" in page and b"Free gold IRA kit" not in page
+
+    client.post(f"/poll/{pid}/qualify", data={"savings": "50k"}, headers=ua)  # changing the answer updates the same row
+    rows = QualifierAnswer.query.all()
+    assert len(rows) == 1 and rows[0].answer == "50k" and rows[0].poll_id == pid
+    page = client.get(f"/poll/{pid}/", headers=ua).data
+    assert page.index(b"Free gold IRA kit") < page.index(b"Try our partner newsletter")
+
+    r = client.get(f"/go/{gold.id}/?p={pid}", headers=ua)
+    click = OfferClick.query.filter_by(offer_id=gold.id).one()
+    assert click.segment == "50k" and r.headers["Location"].endswith(f"-c{click.id}-s50k")
+
+    client.post("/admin/login", data={"password": "ci-password"})
+    with client.session_transaction() as s:
+        csrf = s["csrf"]
+    polls_page = client.get("/admin/polls/").data
+    assert b"retirement savings" in polls_page and b"1 answers" in polls_page
+    assert b"Clicks by savings answer" in client.get("/admin/offers/").data
+    form = {"csrf": csrf, "headline": news.headline, "url": news.url, "active": "1"}
+    client.post(f"/admin/offers/{news.id}", data={**form, "audience": "not_low"})
+    assert db.session.get(Offer, news.id).audience == "not_low"
+    client.post(f"/admin/offers/{news.id}", data={**form, "audience": "nope"})
+    assert db.session.get(Offer, news.id).audience == "all"
+
+    db.session.delete(db.session.get(Poll, pid))
+    db.session.commit()
+
+
 def test_comments_flow(client):
     from flask import current_app
 
