@@ -130,6 +130,7 @@ class PollVote(db.Model):
     poll = db.relationship("Poll", back_populates="votes")
     choice = db.Column(db.Integer, nullable=False)
     voter = db.Column(db.String(64), default="", index=True)  # sha256 of ip+ua, truncated; one vote per voter per poll
+    contact_id = db.Column(db.String(36), default="", index=True)  # BigMailer contact id from the email link (*|_ID|*)
     created_at = db.Column(db.DateTime, default=utcnow)
 
 
@@ -168,6 +169,7 @@ class QualifierAnswer(db.Model):
     __tablename__ = "qualifier_answers"
     id = db.Column(db.Integer, primary_key=True)
     rid = db.Column(db.String(32), nullable=False, index=True)  # random id in the "rid" cookie
+    contact_id = db.Column(db.String(36), default="", index=True)  # BigMailer contact id, when the reader came from an email
     voter = db.Column(db.String(64), default="")
     poll_id = db.Column(db.Integer, nullable=True)
     question = db.Column(db.String(20), default="savings", index=True)

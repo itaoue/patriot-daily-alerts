@@ -2,7 +2,19 @@ import os
 import re
 from datetime import timedelta
 
-from flask import Blueprint, Response, abort, current_app, redirect, render_template, request, send_from_directory, session, url_for
+from flask import (
+    Blueprint,
+    Response,
+    abort,
+    current_app,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    session,
+    url_for,
+)
 from sqlalchemy import or_
 
 from src.models import (
@@ -144,34 +156,73 @@ def _voter_id() -> str:
 @public_bp.route("/poll/<int:poll_id>/")
 def poll_results(poll_id):
     poll = Poll.query.get_or_404(poll_id)
+    contact = _contact_id()
+    if "c" in request.args:  # keep the contact id out of analytics / browser history: cookie it, then clean URL
+        args = {k: v for k, v in request.args.items() if k != "c"}
+        resp = redirect(url_for("public.poll_results", poll_id=poll.id, **args))
+        _remember_reader(resp, contact=contact)
+        return resp
     voted = request.cookies.get(f"pv{poll.id}")
     band = _savings_band()
+    if not band and contact:  # answered earlier from another device / browser
+        prior = QualifierAnswer.query.filter_by(contact_id=contact, question="savings").order_by(QualifierAnswer.updated_at.desc()).first()
+        band = prior.answer if prior else ""
     offers = [o for o in Offer.query.filter_by(active=True).order_by(Offer.weight.desc(), Offer.id.desc())
               if offer_visible(o.audience or "all", band)][:3]
     if offers and not _is_bot():
         Offer.query.filter(Offer.id.in_([o.id for o in offers])).update(
             {Offer.impressions: Offer.impressions + 1}, synchronize_session=False)
         db.session.commit()
-    return render_template("poll.html", poll=poll, results=poll.results(), total=poll.votes.count(), voted=voted,
-                           just_voted=request.args.get("voted") is not None, latest=most_read(4), offers=offers,
-                           band=band, savings_bands=SAVINGS_BANDS, just_answered=request.args.get("answered") is not None,
-                           sponsor=current_app.config.get("POLL_SPONSOR"))
+    resp = make_response(render_template(
+        "poll.html", poll=poll, results=poll.results(), total=poll.votes.count(), voted=voted,
+        just_voted=request.args.get("voted") is not None, latest=most_read(4), offers=offers,
+        band=band, savings_bands=SAVINGS_BANDS, just_answered=request.args.get("answered") is not None,
+        sponsor=current_app.config.get("POLL_SPONSOR")))
+    _remember_reader(resp, contact=contact, band=band)
+    return resp
 
 
 @public_bp.route("/poll/<int:poll_id>/vote/<int:choice>/")
 def poll_vote(poll_id, choice):
-    """Links from the newsletter land here (GET, since email can't POST); one vote per browser / voter hash."""
+    """Links from the newsletter land here (GET, since email can't POST).
+
+    ?c=*|_ID|* (BigMailer contact id) makes it one vote per subscriber, last click wins: link scanners that
+    pre-open the email can't lock in a choice. Without it: one vote per browser / voter hash."""
     poll = Poll.query.get_or_404(poll_id)
     if choice < 0 or choice >= len(poll.option_list):
         abort(404)
-    voter = _voter_id()
-    already = request.cookies.get(f"pv{poll.id}") or PollVote.query.filter_by(poll_id=poll.id, voter=voter).first()
-    if not already:
-        db.session.add(PollVote(poll_id=poll.id, choice=choice, voter=voter))
+    voter, contact = _voter_id(), _contact_id()
+    if not _is_bot():
+        row = PollVote.query.filter_by(poll_id=poll.id, contact_id=contact).first() if contact else None
+        if row:
+            row.choice = choice
+        elif not (request.cookies.get(f"pv{poll.id}") or PollVote.query.filter_by(poll_id=poll.id, voter=voter).first()):
+            db.session.add(PollVote(poll_id=poll.id, choice=choice, voter=voter, contact_id=contact))
         db.session.commit()
     resp = redirect(url_for("public.poll_results", poll_id=poll.id, voted=1))
     resp.set_cookie(f"pv{poll.id}", str(choice), max_age=60 * 60 * 24 * 90, samesite="Lax")
+    _remember_reader(resp, contact=contact)
     return resp
+
+
+_CONTACT_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+_YEAR = 60 * 60 * 24 * 365
+
+
+def _contact_id() -> str:
+    """BigMailer contact id from the email link (?c=) or the cookie it left. Unfilled merge tags (web copy) are ignored."""
+    for value in (request.args.get("c", ""), request.cookies.get("bmc", "")):
+        value = value.strip().lower()
+        if _CONTACT_RE.match(value):
+            return value
+    return ""
+
+
+def _remember_reader(resp, contact: str = "", band: str = "") -> None:
+    if contact and request.cookies.get("bmc") != contact:
+        resp.set_cookie("bmc", contact, max_age=_YEAR, samesite="Lax", httponly=True)
+    if band and request.cookies.get("q_sav") != band:
+        resp.set_cookie("q_sav", band, max_age=_YEAR, samesite="Lax", httponly=True)
 
 
 def _savings_band() -> str:
@@ -181,8 +232,11 @@ def _savings_band() -> str:
 
 @public_bp.route("/poll/<int:poll_id>/qualify", methods=["POST"])
 def poll_qualify(poll_id):
-    """Optional post-vote question (savings band). Decides which offer cards the reader sees; one row per browser."""
+    """Optional post-vote question (savings band). Decides which offer cards the reader sees; one row per browser,
+    or per subscriber when they came from the email. Subscribers' answers are copied to a BigMailer field for segments."""
     import secrets
+
+    from src.routes.api import set_bigmailer_field
 
     poll = Poll.query.get_or_404(poll_id)
     answer = request.form.get("savings", "")
@@ -191,16 +245,20 @@ def poll_qualify(poll_id):
     rid = request.cookies.get("rid", "")
     if not (len(rid) == 32 and rid.isalnum()):
         rid = secrets.token_hex(16)
-    row = QualifierAnswer.query.filter_by(rid=rid, question="savings").first()
+    contact = _contact_id()
+    row = QualifierAnswer.query.filter_by(contact_id=contact, question="savings").first() if contact else None
+    row = row or QualifierAnswer.query.filter_by(rid=rid, question="savings").first()
     if row:
         row.answer, row.poll_id = answer, poll.id
+        row.contact_id = row.contact_id or contact
     else:
-        db.session.add(QualifierAnswer(rid=rid, voter=_voter_id(), poll_id=poll.id, question="savings", answer=answer))
+        db.session.add(QualifierAnswer(rid=rid, voter=_voter_id(), poll_id=poll.id, question="savings", answer=answer, contact_id=contact))
     db.session.commit()
+    if contact:
+        set_bigmailer_field(contact, current_app.config["BIGMAILER_SAVINGS_FIELD"], answer)
     resp = redirect(url_for("public.poll_results", poll_id=poll.id, answered=1, _anchor="offers"))
-    year = 60 * 60 * 24 * 365
-    resp.set_cookie("rid", rid, max_age=year, samesite="Lax", httponly=True)
-    resp.set_cookie("q_sav", answer, max_age=year, samesite="Lax", httponly=True)
+    resp.set_cookie("rid", rid, max_age=_YEAR, samesite="Lax", httponly=True)
+    resp.set_cookie("q_sav", answer, max_age=_YEAR, samesite="Lax", httponly=True)
     return resp
 
 

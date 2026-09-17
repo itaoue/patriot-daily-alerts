@@ -18,6 +18,8 @@ def migrate_columns() -> None:
         "posts": [("editor_notes", "TEXT DEFAULT ''"), ("sources", "TEXT DEFAULT ''")],
         "offers": [("audience", "VARCHAR(16) DEFAULT 'all'")],
         "offer_clicks": [("segment", "VARCHAR(8) DEFAULT ''")],
+        "poll_votes": [("contact_id", "VARCHAR(36) DEFAULT ''")],
+        "qualifier_answers": [("contact_id", "VARCHAR(36) DEFAULT ''")],
     }
     for table, columns in added.items():
         existing = {c["name"] for c in inspect(db.engine).get_columns(table)}

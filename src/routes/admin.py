@@ -244,8 +244,10 @@ def polls():
                   .group_by(QualifierAnswer.answer).all())
     total = sum(counts.values())
     savings = [(label, counts.get(key, 0), round(100 * counts.get(key, 0) / total) if total else 0) for key, label, _ in SAVINGS_BANDS]
+    linked = QualifierAnswer.query.filter(QualifierAnswer.question == "savings", QualifierAnswer.contact_id != "").count()
     return render_template("admin/polls.html", polls=[(p, p.results(), p.votes.count()) for p in rows],
-                           savings=savings, savings_total=total)
+                           savings=savings, savings_total=total, savings_linked=linked,
+                           savings_field=current_app.config["BIGMAILER_SAVINGS_FIELD"])
 
 
 @admin_bp.route("/offers/")

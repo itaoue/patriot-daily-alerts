@@ -33,6 +33,8 @@ class Config:
     BIGMAILER_API_KEY = os.environ.get("BIGMAILER_API_KEY", "")
     BIGMAILER_BRAND_ID = os.environ.get("BIGMAILER_BRAND_ID", "")
     BIGMAILER_LIST_ID = os.environ.get("BIGMAILER_LIST_ID", "")
+    # text field on BigMailer contacts that receives the post-vote savings answer (lt20k / 20k / 50k / 250k / na)
+    BIGMAILER_SAVINGS_FIELD = os.environ.get("BIGMAILER_SAVINGS_FIELD", "PDA_SAVINGS")
 
     GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", "G-7J6WNSF6DJ")  # GA4 property 371513253
 

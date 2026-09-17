@@ -327,7 +327,7 @@ def test_post_vote_savings_question_targets_offers(client):
     with client.session_transaction() as s:
         csrf = s["csrf"]
     polls_page = client.get("/admin/polls/").data
-    assert b"retirement savings" in polls_page and b"1 answers" in polls_page
+    assert b"retirement savings" in polls_page and b"1 answers" in polls_page and b"0 linked" in polls_page
     assert b"Clicks by savings answer" in client.get("/admin/offers/").data
     form = {"csrf": csrf, "headline": news.headline, "url": news.url, "active": "1"}
     client.post(f"/admin/offers/{news.id}", data={**form, "audience": "not_low"})
@@ -337,6 +337,77 @@ def test_post_vote_savings_question_targets_offers(client):
 
     db.session.delete(db.session.get(Poll, pid))
     db.session.commit()
+
+
+def test_vote_links_bind_bigmailer_contact(client, monkeypatch):
+    from flask import current_app
+
+    import src.routes.api as api
+    from src.models import Poll, PollVote, QualifierAnswer, db
+
+    calls = []
+
+    class FakeResp:
+        status_code, text = 200, "{}"
+
+    monkeypatch.setattr(api.requests, "patch", lambda url, **kw: calls.append((url, kw)) or FakeResp())
+    current_app.config.update(PUBLISH_TOKEN="t0k3n", BIGMAILER_API_KEY="k", BIGMAILER_BRAND_ID="brand")
+    try:
+        pid = client.post("/api/polls", json={"campaign": "contact-test", "question": "Contact poll?", "options": ["A", "B"]},
+                          headers={"Authorization": "Bearer t0k3n"}).get_json()["id"]
+        cid = "3f2b8c1e-9a7d-4e21-b5c3-0d6f1a2b3c4d"
+        for name in ("q_sav", "rid", "bmc", f"pv{pid}"):
+            client.delete_cookie(name)
+        ua = {"User-Agent": "Mozilla/5.0 Safari"}
+
+        client.get(f"/poll/{pid}/vote/0/?c={cid}", headers={"User-Agent": "Mozilla/5.0 (compatible; Proofpoint scanner)"})
+        assert PollVote.query.filter_by(poll_id=pid).count() == 0  # scanners don't vote
+        client.delete_cookie(f"pv{pid}")
+        client.get(f"/poll/{pid}/vote/0/?c={cid.upper()}", headers=ua)
+        client.delete_cookie(f"pv{pid}")  # same subscriber on another device changes their mind: last click wins
+        client.get(f"/poll/{pid}/vote/1/?c={cid}", headers={"User-Agent": "Mozilla/5.0 Android"})
+        votes = PollVote.query.filter_by(poll_id=pid).all()
+        assert len(votes) == 1 and votes[0].choice == 1 and votes[0].contact_id == cid
+
+        client.get(f"/poll/{pid}/vote/0/?c=*|_ID|*", headers={"User-Agent": "Mozilla/5.0 Firefox"})  # web copy: raw tag
+        assert PollVote.query.filter_by(poll_id=pid).count() == 1  # bmc cookie from the earlier click still identifies them
+
+        r = client.post(f"/poll/{pid}/qualify", data={"savings": "250k"}, headers=ua)  # contact comes from the bmc cookie
+        row = QualifierAnswer.query.filter_by(contact_id=cid).one()
+        assert r.status_code == 302 and row.answer == "250k"
+        assert calls[-1][0].endswith(f"/brands/brand/contacts/{cid}") and calls[-1][1]["params"] == {"field_values_op": "add"}
+        assert calls[-1][1]["json"] == {"field_values": [{"name": "PDA_SAVINGS", "string": "250k"}]}
+
+        for name in ("q_sav", "rid", "bmc"):  # new browser, arriving from the email link: answer is remembered
+            client.delete_cookie(name)
+        r = client.get(f"/poll/{pid}/?c={cid}&utm_source=newsletter", headers=ua)
+        assert r.status_code == 302 and r.headers["Location"].endswith(f"/poll/{pid}/?utm_source=newsletter")
+        page = client.get(f"/poll/{pid}/", headers=ua)
+        assert b"saved for retirement" not in page.data
+        assert any("q_sav=250k" in h for h in page.headers.getlist("Set-Cookie"))
+
+        client.delete_cookie("q_sav")
+        client.delete_cookie("bmc")
+        client.post(f"/poll/{pid}/qualify", data={"savings": "20k"}, headers=ua)  # anonymous reader: no BigMailer call
+        assert len(calls) == 1
+    finally:
+        current_app.config.update(BIGMAILER_API_KEY="", BIGMAILER_BRAND_ID="")
+        for name in ("q_sav", "rid", "bmc"):
+            client.delete_cookie(name)
+        db.session.delete(db.session.get(Poll, pid))
+        QualifierAnswer.query.delete()
+        db.session.commit()
+
+
+def test_newsletter_poll_links_carry_contact_tag():
+    import tools.build_newsletter as nl
+
+    poll = {"question": "Q?", "options": ["Yes", "No"], "results_url": "https://x/poll/1/",
+            "vote_urls": ["https://x/poll/1/vote/0/", "https://x/poll/1/vote/1/"]}
+    html = nl.poll_block(poll)
+    assert 'href="https://x/poll/1/vote/0/?c=*|_ID|*&amp;utm_source=newsletter' in html or \
+        'href="https://x/poll/1/vote/0/?c=*|_ID|*&utm_source=newsletter' in html
+    assert 'https://x/poll/1/?c=*|_ID|*' in html
 
 
 def test_comments_flow(client):

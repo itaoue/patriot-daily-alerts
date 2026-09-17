@@ -29,6 +29,27 @@ def _push_bigmailer(email: str) -> None:
         log.warning("bigmailer push failed: %s", exc)
 
 
+def set_bigmailer_field(contact_id: str, name: str, value: str) -> bool:
+    """Write one custom field on an existing BigMailer contact (field_values_op=add keeps the contact's other fields)."""
+    cfg = current_app.config
+    if not (cfg["BIGMAILER_API_KEY"] and cfg["BIGMAILER_BRAND_ID"] and contact_id and name):
+        return False
+    try:
+        r = requests.patch(
+            f"https://api.bigmailer.io/v1/brands/{cfg['BIGMAILER_BRAND_ID']}/contacts/{contact_id}",
+            params={"field_values_op": "add"},
+            headers={"X-API-Key": cfg["BIGMAILER_API_KEY"], "Content-Type": "application/json"},
+            json={"field_values": [{"name": name, "string": value}]},
+            timeout=5,
+        )
+        if r.status_code >= 400:
+            log.warning("bigmailer field update failed: %s %s", r.status_code, r.text[:200])
+        return r.status_code < 400
+    except requests.RequestException as exc:  # never block the reader on a third-party failure
+        log.warning("bigmailer field update failed: %s", exc)
+        return False
+
+
 def _wants_json() -> bool:
     return request.is_json or "application/json" in request.headers.get("Accept", "")
 

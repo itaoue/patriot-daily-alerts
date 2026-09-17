@@ -4,7 +4,7 @@
 <h1>Polls</h1>
 <p>One poll per newsletter issue, created automatically when the issue is built. Readers vote from the email; results pages are public.</p>
 <article class="msg">
-  <header><b>Post-vote question: retirement savings</b> · {{ savings_total }} answers (one per browser)</header>
+  <header><b>Post-vote question: retirement savings</b> · {{ savings_total }} answers · {{ savings_linked }} linked to a subscriber (copied to the BigMailer field <code>{{ savings_field }}</code>)</header>
   <table style="margin-top:8px"><tbody>
     {% for label, n, pct in savings %}<tr><td style="width:60%">{{ label }}</td><td>{{ n }}</td><td>{{ pct }}%</td></tr>{% endfor %}
   </tbody></table>
