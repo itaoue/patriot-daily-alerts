@@ -119,11 +119,12 @@ def pick_sponsors(date_et):
 
 
 def sponsor_url(b, slot, campaign):
-    """Everflow reads sub1..sub5 from the tracking link: issue, slot and creative, so the network report splits by all three."""
+    """Everflow reads sub1..sub5 from the tracking link: sub1 is always the source (pda), then issue, slot and creative,
+    so the network report splits by all three."""
     u = b["url"].replace("{campaign}", campaign).replace("{slot}", slot).replace("{banner}", b.get("name", ""))
     if "{" in b["url"] or "sub1=" in u:
         return u
-    return f"{u}{'&' if '?' in u else '?'}sub1={campaign}&sub2={slot}&sub3={b.get('name', '')}"
+    return f"{u}{'&' if '?' in u else '?'}sub1=pda&sub2={campaign}&sub3={slot}&sub4={b.get('name', '')}"
 
 
 def sponsor_block(b, slot, campaign):

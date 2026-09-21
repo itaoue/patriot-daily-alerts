@@ -154,7 +154,7 @@ Railway 变量：`RESEND_API_KEY`（推荐）或 `SMTP_*`，加上 `MAIL_FROM=ne
 - `tools/push_newsletter.py`：推到 BigMailer 建草稿活动（`--ready` 直接标记可发送）。需要 `BIGMAILER_API_KEY`、`BIGMAILER_BRAND_ID`；不设 `BIGMAILER_LIST_ID` 就发给品牌下全部列表，设了（可逗号分隔多个）就只发那些。
 - `.github/workflows/newsletter.yml`：每天太平洋时间 21:00 前后（文章批次两小时后，同样带重试；当天新文章不足 3 篇时会等待）自动构建、提交 View online 页面、以**草稿**推入 BigMailer，由你在 BigMailer 里手动发送；也可手动触发并选择 `ready=true`。
 - 底部 **Today's Poll**：每期一个问题（Sonnet 5 根据当天头条生成，失败则用配置里的备选问题轮换），读者点选项即投票，跳到站内 `/poll/<id>/` 结果页看百分比；后台 Polls 页看每期结果。
-- **SPONSORED banner**：`config.json` 的 `sponsors.banners` 是素材池（`image` 放 `src/static/img/sponsors/`，1200px 宽 JPG；`url` 是 tracking link）。每期取两张、每天往后轮一位，`group` 相同的相似素材不会同期出现，`active: false` 暂停某张，`enabled: false` 整体关闭。链接自动带 Everflow 的 `sub1=期号&sub2=top|mid&sub3=素材名`；`url` 里自己写了 `{campaign}` `{slot}` `{banner}` 占位符时按你写的来。
+- **SPONSORED banner**：`config.json` 的 `sponsors.banners` 是素材池（`image` 放 `src/static/img/sponsors/`，1200px 宽 JPG；`url` 是 tracking link）。每期取两张、每天往后轮一位，`group` 相同的相似素材不会同期出现，`active: false` 暂停某张，`enabled: false` 整体关闭。链接自动带 Everflow 的 `sub1=pda&sub2=期号&sub3=top|mid&sub4=素材名`（HasOffers 的链接在 `url` 里用 `aff_sub=pda&aff_sub2={campaign}…` 写法）；`url` 里自己写了 `{campaign}` `{slot}` `{banner}` 占位符时按你写的来。
 - 文案、地址、投票开关和备选问题在 `content/newsletter/config.json` 里改。
 
 ## 目录结构

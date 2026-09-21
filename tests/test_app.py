@@ -429,7 +429,7 @@ def test_newsletter_sponsor_slots_rotate():
             p = nl.pick_sponsors(dt.datetime(2026, 9, d))
             assert {p["top"]["name"], p["mid"]["name"]} != {"a1", "a2"}
         html = nl.sponsor_block(banners[1], "mid", "2026-09-21-daily")
-        assert "SPONSORED" in html and "?o=1&amp;sub1=2026-09-21-daily&amp;sub2=mid&amp;sub3=b" in html
+        assert "SPONSORED" in html and "?o=1&amp;sub1=pda&amp;sub2=2026-09-21-daily&amp;sub3=mid&amp;sub4=b" in html
         assert f'{nl.SITE}/static/img/sponsors/b.jpg' in html
         nl.CONFIG["sponsors"]["enabled"] = False
         assert nl.pick_sponsors(dt.datetime(2026, 9, 21)) == {}
