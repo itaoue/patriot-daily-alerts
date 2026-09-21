@@ -4,6 +4,12 @@ name: Newsletter
 on:
   workflow_dispatch:
     inputs:
+      batch_time:
+        description: "HH:MM the story batch is scheduled for (the site's SCHEDULE_STORIES); the guard counts stories from this time"
+        default: "19:00"
+      batch_tz:
+        description: "timezone of batch_time (the site's SCHEDULE_TZ)"
+        default: "America/Los_Angeles"
       guard:
         description: "true = skip if today's issue exists or fewer than 3 stories since 19:00 Pacific (set by the site's scheduler)"
         default: "false"
@@ -59,11 +65,13 @@ jobs:
           SUBJ: ${{ github.event.inputs.subject }}
           TEAS: ${{ github.event.inputs.teaser }}
           GUARD: ${{ github.event.inputs.guard }}
+          BATCH_TIME: ${{ github.event.inputs.batch_time }}
+          BATCH_TZ: ${{ github.event.inputs.batch_tz }}
         run: |
           set -o pipefail
           SKIP=""
           if [ "${{ github.event_name }}" = "schedule" ] || [ "$GUARD" = "true" ]; then
-            SINCE=$(python -c "import datetime as d, zoneinfo as z; n=d.datetime.now(z.ZoneInfo('America/Los_Angeles')); print(n.replace(hour=19, minute=0, second=0, microsecond=0).astimezone(d.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S'))")   # today's 19:00 Pacific as UTC
+            SINCE=$(python -c "import os, datetime as d, zoneinfo as z; h, m = (os.environ.get('BATCH_TIME') or '19:00').split(':'); n = d.datetime.now(z.ZoneInfo(os.environ.get('BATCH_TZ') or 'America/Los_Angeles')); print(n.replace(hour=int(h), minute=int(m), second=0, microsecond=0).astimezone(d.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S'))")   # today's story-batch time (site scheduler's SCHEDULE_STORIES / SCHEDULE_TZ) as UTC
             SKIP="--skip-if-exists --since $SINCE --min-new 3"   # a manual build earlier the same day wins; wait for today's batch
           fi
           REFRESH=""; [ -n "$LEAD" ] && REFRESH="--refresh-poll"   # a chosen lead gets a matching poll question

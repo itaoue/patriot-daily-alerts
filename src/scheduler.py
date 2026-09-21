@@ -64,7 +64,9 @@ def release(job, day):
 
 def dispatch(job, config):
     url = f"https://api.github.com/repos/{config['GITHUB_REPO']}/actions/workflows/{job['workflow']}/dispatches"
-    r = requests.post(url, json={"ref": config.get("GITHUB_REF", "main"), "inputs": job["inputs"]}, timeout=30,
+    # the workflows' guards count stories from the batch time, so they must follow SCHEDULE_STORIES, not a fixed 19:00
+    inputs = {**job["inputs"], "batch_time": config.get("SCHEDULE_STORIES") or "19:00", "batch_tz": config["SCHEDULE_TZ"]}
+    r = requests.post(url, json={"ref": config.get("GITHUB_REF", "main"), "inputs": inputs}, timeout=30,
                       headers={"Authorization": f"Bearer {config['GITHUB_DISPATCH_TOKEN']}",
                                "Accept": "application/vnd.github+json", "User-Agent": "patriot-daily-alerts"})
     return r.status_code

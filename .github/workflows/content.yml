@@ -4,6 +4,12 @@ name: Content pipeline
 on:
   workflow_dispatch:
     inputs:
+      batch_time:
+        description: "HH:MM the story batch is scheduled for (the site's SCHEDULE_STORIES); the guard counts stories from this time"
+        default: "19:00"
+      batch_tz:
+        description: "timezone of batch_time (the site's SCHEDULE_TZ)"
+        default: "America/Los_Angeles"
       guard:
         description: "true = one batch per day after 19:00 Pacific (set by the site's scheduler)"
         default: "false"
@@ -42,13 +48,16 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: pip install -r requirements-content.txt
-      - name: Guard (one batch per day, after 19:00 Pacific)
+      - name: Guard (one batch per day, after the scheduled batch time)
         id: guard
+        env:
+          BATCH_TIME: ${{ github.event.inputs.batch_time }}
+          BATCH_TZ: ${{ github.event.inputs.batch_tz }}
         run: |
           if [ "${{ github.event_name }}" != "schedule" ] && [ "${{ github.event.inputs.guard }}" != "true" ]; then echo "skip=false" >> "$GITHUB_OUTPUT"; exit 0; fi
-          TARGET=$(python -c "import datetime as d, zoneinfo as z; n=d.datetime.now(z.ZoneInfo('America/Los_Angeles')); print(n.replace(hour=19, minute=0, second=0, microsecond=0).astimezone(d.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S'))")   # today's 19:00 Pacific as UTC (GNU date -u would parse "today" in UTC)
+          TARGET=$(python -c "import os, datetime as d, zoneinfo as z; h, m = (os.environ.get('BATCH_TIME') or '19:00').split(':'); n = d.datetime.now(z.ZoneInfo(os.environ.get('BATCH_TZ') or 'America/Los_Angeles')); print(n.replace(hour=int(h), minute=int(m), second=0, microsecond=0).astimezone(d.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S'))")   # today's story-batch time (site scheduler's SCHEDULE_STORIES / SCHEDULE_TZ) as UTC
           NOW=$(date -u +%Y-%m-%dT%H:%M:%S)
-          if [[ "$NOW" < "$TARGET" ]]; then echo "before today's 19:00 Pacific target ($TARGET UTC); skipping"; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [[ "$NOW" < "$TARGET" ]]; then echo "before today's batch time ($TARGET UTC); skipping"; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; fi
           COUNT=$(curl -s -H "Authorization: Bearer $PUBLISH_TOKEN" -H "User-Agent: Mozilla/5.0" "$SITE_URL/api/posts/recent?days=1" \
             | python -c "import json,sys; print(sum(1 for p in json.load(sys.stdin)['posts'] if p['published_at'] >= '$TARGET'))")
           echo "stories published since $TARGET UTC: $COUNT"
