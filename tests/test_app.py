@@ -410,6 +410,33 @@ def test_newsletter_poll_links_carry_contact_tag():
     assert 'https://x/poll/1/?c=*|_ID|*' in html
 
 
+def test_newsletter_sponsor_slots_rotate():
+    import datetime as dt
+
+    import tools.build_newsletter as nl
+
+    banners = [{"name": "a1", "group": "a", "image": "/static/img/sponsors/a1.jpg", "url": "https://trk.example/x/", "alt": "A one"},
+               {"name": "b", "image": "/static/img/sponsors/b.jpg", "url": "https://trk.example/x/?o=1", "alt": "B"},
+               {"name": "a2", "group": "a", "image": "/static/img/sponsors/a2.jpg", "url": "https://trk.example/x/", "active": False}]
+    saved = nl.CONFIG.get("sponsors")
+    nl.CONFIG["sponsors"] = {"enabled": True, "banners": banners}
+    try:
+        days = [nl.pick_sponsors(dt.datetime(2026, 9, d)) for d in (21, 22)]
+        assert [d["top"]["name"] for d in days] in (["a1", "b"], ["b", "a1"])  # advances daily, paused banner never runs
+        assert all(d["top"]["name"] != d["mid"]["name"] for d in days)
+        banners[2]["active"] = True
+        for d in range(21, 27):  # look-alikes sharing a group never share an issue
+            p = nl.pick_sponsors(dt.datetime(2026, 9, d))
+            assert {p["top"]["name"], p["mid"]["name"]} != {"a1", "a2"}
+        html = nl.sponsor_block(banners[1], "mid", "2026-09-21-daily")
+        assert "SPONSORED" in html and "?o=1&amp;sub1=2026-09-21-daily&amp;sub2=mid&amp;sub3=b" in html
+        assert f'{nl.SITE}/static/img/sponsors/b.jpg' in html
+        nl.CONFIG["sponsors"]["enabled"] = False
+        assert nl.pick_sponsors(dt.datetime(2026, 9, 21)) == {}
+    finally:
+        nl.CONFIG["sponsors"] = saved
+
+
 def test_comments_flow(client):
     from flask import current_app
 

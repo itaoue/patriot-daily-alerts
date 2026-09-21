@@ -5,13 +5,47 @@
   "postal_address": "PatriotDailyAlerts.com, 8 The Green Ste. A, Dover, DE 19901, United States of America",
   "leads": 3,
   "trending": 6,
-  "sponsor": {
-    "enabled": false,
+  "sponsors": {
+    "enabled": true,
     "label": "SPONSORED",
-    "headline": "21 Benefits People Often Forget To Claim",
-    "image": "",
-    "url": "https://patriotdailyalerts.com/",
-    "cta": "SEE THE LIST"
+    "slots": [
+      "top",
+      "mid"
+    ],
+    "banners": [
+      {
+        "name": "electric-switch-a",
+        "image": "/static/img/sponsors/electric-switch-a.jpg",
+        "alt": "Flip This One Switch Before Bed. Your Next Electric Bill Could Be Shockingly Lower.",
+        "url": "https://www.g8mv2trk.com/2P9J9R/2HFP6ZP/",
+        "group": "electric",
+        "active": true
+      },
+      {
+        "name": "seniors-11-costs",
+        "image": "/static/img/sponsors/seniors-11-costs.jpg",
+        "alt": "11 Costs Seniors Need to Cut Before They Drain Their Retirement",
+        "url": "https://www.yrxtrk.com/aff_c?offer_id=25035&aff_id=2259&aff_sub={campaign}&aff_sub2={slot}&aff_sub3={banner}",
+        "group": "seniors-costs",
+        "active": true
+      },
+      {
+        "name": "electric-trick-90",
+        "image": "/static/img/sponsors/electric-trick-90.jpg",
+        "alt": "1 Simple Trick To Cut Your Electric Bill By 90%",
+        "url": "https://www.g8mv2trk.com/2P9J9R/2HFP6ZP/",
+        "group": "electric",
+        "active": true
+      },
+      {
+        "name": "electric-switch-b",
+        "image": "/static/img/sponsors/electric-switch-b.jpg",
+        "alt": "Flip This One Switch Before Bed. Your Next Electric Bill Could Be Shockingly Lower.",
+        "url": "https://www.g8mv2trk.com/2P9J9R/2HFP6ZP/",
+        "group": "electric",
+        "active": true
+      }
+    ]
   },
   "poll": {
     "enabled": true,

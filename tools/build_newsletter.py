@@ -8,11 +8,12 @@ Build the Patriot Daily Alerts email newsletter (AM / PM edition) from the site'
 
 Layout mirrors the Middle America News daily: one 600px column, dark masthead with the logo,
 edition + date strip, three lead stories (headline as an underlined link, full-width image,
-red READ MORE button), an "Also Trending" list of headlines, an optional SPONSORED block, and
+red READ MORE button), an "Also Trending" list of headlines, two SPONSORED banner slots (above the
+lead and above Also Trending, rotating through content/newsletter/config.json "sponsors"), and
 a quiet grey footer with unsubscribe / view-online merge tags (BigMailer style: *|UNSUB|*, *|VIEW|*).
 
 Stories come from GET /api/posts/recent (PUBLISH_TOKEN) — only published ones. Settings and the
-optional sponsor live in content/newsletter/config.json.
+sponsor banners live in content/newsletter/config.json.
 
 Output: dist/newsletters/<date>-<edition>.html / .txt / .json, and a copy of the HTML in
 src/static/newsletters/ so "View online" works once committed.
@@ -97,21 +98,44 @@ def trending_block(items, campaign):
 <tr><td style="padding:6px 25px 20px;"><table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">{rows}</table></td></tr>'''
 
 
-def sponsor_block(s):
-    if not s or not s.get("enabled"):
+def pick_sponsors(date_et):
+    """Two banners per issue (top slot, mid slot), advancing one step through the active list each day;
+    the two slots never show the same creative, or two look-alikes that share a "group"."""
+    cfg = CONFIG.get("sponsors") or {}
+    banners = [b for b in cfg.get("banners", []) if b.get("active", True) and b.get("image") and b.get("url")]
+    if not cfg.get("enabled") or not banners:
+        return {}
+    n = date_et.toordinal()
+    order = banners[n % len(banners):] + banners[: n % len(banners)]
+    picked = {}
+    for slot in cfg.get("slots", ["top", "mid"]):
+        used = [b.get("group") or b.get("name") for b in picked.values()]
+        # skip creatives that look like one already in this issue (same "group"); fall back to any unused one
+        nxt = next((b for b in order if (b.get("group") or b.get("name")) not in used), None) or \
+            next((b for b in order if b not in picked.values()), None)
+        if nxt:
+            picked[slot] = nxt
+    return picked
+
+
+def sponsor_url(b, slot, campaign):
+    """Everflow reads sub1..sub5 from the tracking link: issue, slot and creative, so the network report splits by all three."""
+    u = b["url"].replace("{campaign}", campaign).replace("{slot}", slot).replace("{banner}", b.get("name", ""))
+    if "{" in b["url"] or "sub1=" in u:
+        return u
+    return f"{u}{'&' if '?' in u else '?'}sub1={campaign}&sub2={slot}&sub3={b.get('name', '')}"
+
+
+def sponsor_block(b, slot, campaign):
+    """Full-width linked banner under a small SPONSORED label, in the two places Middle America News runs its ad slots."""
+    if not b:
         return ""
-    img = (f'<tr><td style="padding:0 25px 6px;"><a href="{esc(s["url"])}" target="_blank"><img src="{esc(s["image"])}" width="550" alt="" '
-           f'style="display:block;width:100%;max-width:550px;height:auto;border:0;"></a></td></tr>' if s.get("image") else "")
+    u = esc(sponsor_url(b, slot, campaign))
+    src = b["image"] if b["image"].startswith("http") else f"{SITE}{b['image']}"
+    label = esc((CONFIG.get("sponsors") or {}).get("label", "SPONSORED"))
     return f'''
-<tr><td style="padding:18px 25px 0;font-family:{FONT};font-size:11px;line-height:120%;color:{GREY};text-align:center;letter-spacing:.12em;text-transform:uppercase;">{esc(s.get("label", "SPONSORED"))}</td></tr>
-<tr><td style="padding:8px 25px 6px;font-family:{FONT};font-size:22px;line-height:120%;font-weight:700;color:{INK};text-align:center;">
-  <a href="{esc(s["url"])}" target="_blank" style="color:{INK};text-decoration:underline;">{esc(s["headline"])}</a></td></tr>
-{img}
-<tr><td align="center" style="padding:8px 25px 22px;">
-  <table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr>
-    <td align="center" bgcolor="{NAVY}" style="background:{NAVY};border-radius:3px;padding:10px 28px;">
-      <a href="{esc(s["url"])}" target="_blank" style="font-family:{FONT};font-size:16px;color:#ffffff;text-decoration:none;font-weight:700;">{esc(s.get("cta", "LEARN MORE"))}</a>
-    </td></tr></table></td></tr>
+<tr><td style="padding:14px 25px 4px;font-family:{FONT};font-size:10px;line-height:120%;color:{GREY};text-align:center;letter-spacing:.12em;text-transform:uppercase;">{label}</td></tr>
+<tr><td align="center" style="padding:0 25px 16px;"><a href="{u}" target="_blank" rel="nofollow sponsored"><img src="{esc(src)}" width="550" alt="{esc(b.get("alt", ""))}" style="display:block;width:100%;max-width:550px;height:auto;border:1px solid {RULE};outline:none;text-decoration:none;"></a></td></tr>
 <tr><td style="padding:0 25px;"><div style="border-top:1px solid {RULE};font-size:0;line-height:0;">&nbsp;</div></td></tr>'''
 
 
@@ -281,17 +305,13 @@ def poll_block(poll):
 <tr><td style="padding:8px 25px 22px;font-family:{FONT};font-size:12px;color:{GREY};text-align:center;">Tap an answer to vote. <a href="{esc(poll["results_url"])}?c={CONTACT_TAG}" target="_blank" style="color:{GREY};text-decoration:underline;">See the results so far</a>.</td></tr>'''
 
 
-def render(leads, trending, edition, date_et, campaign, view_url, poll=None, subject_line=None):
+def render(leads, trending, edition, date_et, campaign, view_url, poll=None, subject_line=None, sponsors=None):
     subject, teaser = subject_line or (leads[0]["title"], leads[1]["title"] if len(leads) > 1 else CONFIG["tagline"])
     preheader = f"and {teaser}" if len(leads) > 1 else CONFIG["tagline"]
     pad = "&#8204;&nbsp;" * 90  # keeps inbox previews from pulling in body text after the preheader
-    stories = "".join(story_block(p, campaign) for p in leads)
-    blocks = stories
-    if CONFIG.get("sponsor", {}).get("enabled"):
-        # sponsor after the first story, like the template's ad slot
-        first_end = stories.find("</td></tr>", stories.find("READ MORE"))
-        cut = stories.find("&nbsp;</div></td></tr>") + len("&nbsp;</div></td></tr>")
-        blocks = stories[:cut] + sponsor_block(CONFIG["sponsor"]) + stories[cut:] if first_end > 0 else stories + sponsor_block(CONFIG["sponsor"])
+    sponsors = sponsors or {}
+    top, mid = (sponsor_block(sponsors.get(k), k, campaign) for k in ("top", "mid"))
+    blocks = top + "".join(story_block(p, campaign) for p in leads) + mid
     body = f'''<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -328,8 +348,13 @@ def render(leads, trending, edition, date_et, campaign, view_url, poll=None, sub
 </table>
 </td></tr></table>
 </body></html>'''
-    text = (f"{CONFIG['from_name']} - {date_et.strftime('%A, %B %d, %Y')}\n\n"
+    def sponsor_text(k):
+        b = sponsors.get(k)
+        return f"SPONSORED: {b.get('alt', '')}\n{sponsor_url(b, k, campaign)}\n\n" if b else ""
+
+    text = (f"{CONFIG['from_name']} - {date_et.strftime('%A, %B %d, %Y')}\n\n" + sponsor_text("top")
             + "\n\n".join(f"{p['title']}\n{link(p, campaign)}" for p in leads)
+            + ("\n\n" + sponsor_text("mid").rstrip() if sponsors.get("mid") else "")
             + ("\n\nALSO TRENDING\n" + "\n".join(f"- {p['title']}\n  {link(p, campaign)}" for p in trending) if trending else "")
             + (f"\n\nTODAY'S POLL: {poll['question']}\n" + "\n".join(f"- {o}: {u}?c={CONTACT_TAG}" for o, u in zip(poll["options"], poll["vote_urls"])) if poll else "")
             + f"\n\nUnsubscribe: *|UNSUB|*\n{CONFIG['postal_address']}\n")
@@ -392,20 +417,24 @@ def main():
         teaser = re.sub(r"^(?:and|&)\s+", "", (a.teaser or "").strip(), flags=re.I)  # the preheader already starts with "and"
         subject_line = (a.subject or subject_line[0], teaser or subject_line[1])
     print(f"  subject: {subject_line[0]}\n  teaser:  and {subject_line[1]}")
-    subject, preheader, body, text = render(leads, trending, edition, date_et, campaign, view_url, poll, subject_line)
+    sponsors = pick_sponsors(date_et)
+    subject, preheader, body, text = render(leads, trending, edition, date_et, campaign, view_url, poll, subject_line, sponsors)
     OUT.mkdir(parents=True, exist_ok=True)
     STATIC.mkdir(parents=True, exist_ok=True)
     (OUT / f"{campaign}.html").write_text(body, encoding="utf-8")
     (OUT / f"{campaign}.txt").write_text(text, encoding="utf-8")
     (OUT / f"{campaign}.json").write_text(json.dumps({"campaign": campaign, "edition": edition, "subject": subject, "preheader": preheader,
                                                        "leads": [p["slug"] for p in leads], "trending": [p["slug"] for p in trending],
-                                                       "poll": poll and {"id": poll["id"], "question": poll["question"]}}, indent=1))
+                                                       "poll": poll and {"id": poll["id"], "question": poll["question"]},
+                                                       "sponsors": {k: b.get("name") for k, b in sponsors.items()}}, indent=1))
     shutil.copy(OUT / f"{campaign}.html", STATIC / f"{campaign}.html")
     print(f"{campaign}: subject '{subject}' | preheader '{preheader}'")
     for p in leads:
         print(f"  lead: {p['title']}")
     for p in trending:
         print(f"  trending: {p['title']}")
+    for k, b in sponsors.items():
+        print(f"  sponsor ({k}): {b.get('name')}")
     print(f"wrote dist/newsletters/{campaign}.html (+ .txt/.json) and src/static/newsletters/{campaign}.html")
 
 

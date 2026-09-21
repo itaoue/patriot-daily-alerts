@@ -148,13 +148,14 @@ Railway 变量：`RESEND_API_KEY`（推荐）或 `SMTP_*`，加上 `MAIL_FROM=ne
 
 ## 邮件 Newsletter
 
-版式照搬 Middle America News 的早晚报：600px 单栏、logo 页头、深蓝的“edition + 日期”条、三条头条（大标题链接 + 全宽配图 + 红色 READ MORE 按钮）、Also Trending 标题列表、可选 SPONSORED 广告位、灰色页脚（退订、隐私、邮政地址、免责声明）。
+版式照搬 Middle America News 的早晚报：600px 单栏、logo 页头、深蓝的“edition + 日期”条、三条头条（大标题链接 + 全宽配图 + 红色 READ MORE 按钮）、Also Trending 标题列表、两个 SPONSORED banner 位（头条上方、Also Trending 上方，和 MAN 的广告位同位置）、灰色页脚（退订、隐私、邮政地址、免责声明）。
 
 - `tools/build_newsletter.py`：从站点接口取已发布文章，最近 16 小时内的前三篇做头条，其余做 Also Trending；**邮件主题由 Sonnet 5 按 Middle America News 的公式另写**（8 到 13 词、一个大写词、点名人物、留一个悬念、必须忠于原文），预览文字 = “and 第二条的同款钩子”；网站标题不变；所有链接带 UTM。输出到 `dist/newsletters/<日期>-<am|pm>.html/.txt/.json`，并复制一份到 `src/static/newsletters/` 作为 “View online” 页面。
 - `tools/push_newsletter.py`：推到 BigMailer 建草稿活动（`--ready` 直接标记可发送）。需要 `BIGMAILER_API_KEY`、`BIGMAILER_BRAND_ID`；不设 `BIGMAILER_LIST_ID` 就发给品牌下全部列表，设了（可逗号分隔多个）就只发那些。
 - `.github/workflows/newsletter.yml`：每天太平洋时间 21:00 前后（文章批次两小时后，同样带重试；当天新文章不足 3 篇时会等待）自动构建、提交 View online 页面、以**草稿**推入 BigMailer，由你在 BigMailer 里手动发送；也可手动触发并选择 `ready=true`。
 - 底部 **Today's Poll**：每期一个问题（Sonnet 5 根据当天头条生成，失败则用配置里的备选问题轮换），读者点选项即投票，跳到站内 `/poll/<id>/` 结果页看百分比；后台 Polls 页看每期结果。
-- 文案、地址、广告位、投票开关和备选问题在 `content/newsletter/config.json` 里改。
+- **SPONSORED banner**：`config.json` 的 `sponsors.banners` 是素材池（`image` 放 `src/static/img/sponsors/`，1200px 宽 JPG；`url` 是 tracking link）。每期取两张、每天往后轮一位，`group` 相同的相似素材不会同期出现，`active: false` 暂停某张，`enabled: false` 整体关闭。链接自动带 Everflow 的 `sub1=期号&sub2=top|mid&sub3=素材名`；`url` 里自己写了 `{campaign}` `{slot}` `{banner}` 占位符时按你写的来。
+- 文案、地址、投票开关和备选问题在 `content/newsletter/config.json` 里改。
 
 ## 目录结构
 
