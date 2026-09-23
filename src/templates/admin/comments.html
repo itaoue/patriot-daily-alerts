@@ -9,7 +9,7 @@
   <header><b>{{ c.name }}</b>{% if c.email %} &lt;{{ c.email }}&gt;{% endif %} · {{ c.created_at|datetime }} · on <a href="{{ c.post.url }}#comments" target="_blank">{{ c.post.title[:70] }}</a> · <span class="pill pill--{{ 'published' if c.status == 'approved' else 'draft' }}">{{ c.status }}</span></header>
   <p>{{ c.body }}</p>
   <form method="post" action="{{ url_for('admin.moderate_comment', comment_id=c.id) }}" class="inline">
-    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="?status={{ status }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="{{ url_for('admin.comments', status=status) }}">
     {% if c.status != 'approved' %}<button name="action" value="approved">Approve</button>{% endif %}
     {% if c.status != 'spam' %}<button name="action" value="spam">Spam</button>{% endif %}
     <button name="action" value="delete" onclick="return confirm('Delete this comment?')">Delete</button>

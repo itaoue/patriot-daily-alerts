@@ -328,7 +328,10 @@ def moderate_comment(comment_id):
     elif action in ("approved", "pending", "spam"):
         c.status = action
     db.session.commit()
-    return redirect(request.form.get("next") or url_for("admin.comments"))
+    nxt = request.form.get("next", "")
+    if not nxt.startswith("/") or nxt.startswith("//"):
+        nxt = url_for("admin.comments")
+    return redirect(nxt)
 
 
 @admin_bp.route("/moderate/<token>")

@@ -456,7 +456,10 @@ def test_comments_flow(client):
         s["admin"] = True
         csrf = s["csrf"]
     assert b"Well said." in client.get("/admin/comments/?status=pending").data
-    client.post(f"/admin/comments/{c.id}", data={"csrf": csrf, "action": "approved"})
+    queue = client.get("/admin/comments/?status=pending").data
+    assert b'name="next" value="/admin/comments/?status=pending"' in queue
+    r = client.post(f"/admin/comments/{c.id}", data={"csrf": csrf, "action": "approved", "next": "?status=pending"})
+    assert r.headers["Location"].endswith("/admin/comments/")
     page = client.get(url).data
     assert b"Well said." in page and b"1 Comment<" in page
     current_app.config["COMMENTS_AUTO_APPROVE"] = True
