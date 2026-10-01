@@ -77,6 +77,15 @@
     }, { threshold: 0.2 }).observe(heroForm);
   }
 
+  // Comment form: remember the reader's name so returning commenters only type the comment
+  var nameInput = document.querySelector('[data-remember-name]');
+  if (nameInput) {
+    try { nameInput.value = localStorage.getItem('commentName') || ''; } catch (e) {}
+    nameInput.form.addEventListener('submit', function () {
+      try { localStorage.setItem('commentName', nameInput.value.trim()); } catch (e) {}
+    });
+  }
+
   // Hide broken hotlinked images gracefully
   document.querySelectorAll('img').forEach(function (img) {
     img.addEventListener('error', function () {

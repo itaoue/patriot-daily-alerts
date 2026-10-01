@@ -302,10 +302,10 @@ def add_comment(slug):
     back = url_for("public.article_or_page", slug=slug)
     if f.get("website"):  # honeypot
         return redirect(back + "?comment=ok#comments")
-    name = (f.get("name") or "").strip()[:60]
+    name = (f.get("name") or "").strip()[:60] or "Anonymous"  # name is optional: the comment box is the only required field
     body = (f.get("body") or "").strip()[:2000]
     email = (f.get("email") or "").strip()[:254]
-    if len(name) < 2 or len(body) < 3 or (email and not valid_email(email)):
+    if not body or (email and not valid_email(email)):
         return redirect(back + "?comment=invalid#comment-form")
     voter = _voter_id()
     from datetime import timedelta as _td
@@ -319,6 +319,8 @@ def add_comment(slug):
                       user_agent=request.user_agent.string[:300], status="approved" if auto else "pending")
     db.session.add(comment)
     db.session.commit()
+    if not auto:  # let the reader see their own comment right away while it waits for review
+        session["my_comments"] = (session.get("my_comments") or [])[-19:] + [comment.id]
     from src.notify import notify_comment
 
     notify_comment(comment)
@@ -437,9 +439,11 @@ def article_or_page(slug):
         prev_post = published_posts().filter(Post.published_at < post.published_at).order_by(Post.published_at.desc()).first()
         next_post = published_posts().filter(Post.published_at > post.published_at).order_by(Post.published_at.asc()).first()
         comments = post.comments.filter_by(status="approved").order_by(Comment.created_at.asc()).limit(300).all()
+        mine = [i for i in (session.get("my_comments") or []) if isinstance(i, int)]
+        my_pending = post.comments.filter(Comment.status == "pending", Comment.id.in_(mine)).order_by(Comment.created_at.asc()).all() if mine else []
         return render_template(
             "article.html", post=post, related=related, most_read=most_read(5, post.id),
-            prev_post=prev_post, next_post=next_post, comments=comments,
+            prev_post=prev_post, next_post=next_post, comments=comments, my_pending=my_pending,
             comment_state=request.args.get("comment"), comments_enabled=current_app.config["COMMENTS_ENABLED"],
         )
     page = Page.query.filter_by(slug=slug).first_or_404()

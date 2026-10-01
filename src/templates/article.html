@@ -50,29 +50,31 @@
     {% if comments_enabled %}
     <section class="mh-comments" id="comments">
       <h2 class="mh-widget-title">{{ comments|length }} Comment{{ '' if comments|length == 1 else 's' }}</h2>
-      {% if comment_state == 'pending' %}<p class="alert alert--ok">Thanks. Your comment is awaiting review and will appear once approved.</p>
+      {% if comment_state == 'pending' %}<p class="alert alert--ok">Thanks. Your comment is awaiting review and will appear for everyone once approved.</p>
       {% elif comment_state == 'ok' %}<p class="alert alert--ok">Thanks. Your comment has been posted.</p>
-      {% elif comment_state == 'invalid' %}<p class="alert alert--error">Please enter your name and a comment (and a valid email if you include one).</p>
+      {% elif comment_state == 'invalid' %}<p class="alert alert--error">Please write a comment before posting.</p>
       {% elif comment_state == 'slow' %}<p class="alert alert--error">You are commenting too quickly. Please try again in a little while.</p>{% endif %}
+      <form class="form comment-form" id="comment-form" method="post" action="{{ url_for('public.add_comment', slug=post.slug) }}">
+        <input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+        <label>What do you think? <textarea name="body" rows="3" required maxlength="2000" placeholder="{{ 'Join the conversation…' if comments else 'Be the first to comment…' }}"></textarea></label>
+        <div class="comment-form__row">
+          <label>Name <span class="muted">(optional)</span> <input type="text" name="name" maxlength="60" autocomplete="given-name" placeholder="Anonymous" data-remember-name></label>
+          <button class="btn" type="submit">Post comment</button>
+        </div>
+        <p class="comment-form__note">No sign-up needed. Comments are reviewed before they appear. Keep it civil; no links.</p>
+      </form>
       {% for c in comments %}
       <article class="comment">
         <div class="comment__meta"><strong>{{ c.name }}</strong><span>{{ c.created_at|ago }}</span></div>
         <p>{{ c.body }}</p>
       </article>
-      {% else %}
-      <p class="comment__empty">Be the first to comment.</p>
       {% endfor %}
-      <form class="form comment-form" id="comment-form" method="post" action="{{ url_for('public.add_comment', slug=post.slug) }}">
-        <h3>Leave a comment</h3>
-        <input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
-        <div class="comment-form__row">
-          <label>Name <input type="text" name="name" required maxlength="60"></label>
-          <label>Email <span class="muted">(optional, never shown)</span> <input type="email" name="email" maxlength="254"></label>
-        </div>
-        <label>Comment <textarea name="body" rows="5" required maxlength="2000"></textarea></label>
-        <button class="btn" type="submit">Post comment</button>
-        <p class="comment-form__note">Comments are reviewed before they appear. Keep it civil; no links.</p>
-      </form>
+      {% for c in my_pending %}
+      <article class="comment comment--pending">
+        <div class="comment__meta"><strong>{{ c.name }}</strong><span>{{ c.created_at|ago }}</span><span>Awaiting review (only you can see this)</span></div>
+        <p>{{ c.body }}</p>
+      </article>
+      {% endfor %}
     </section>
     {% endif %}
     <nav class="mh-post-nav" aria-label="More stories">

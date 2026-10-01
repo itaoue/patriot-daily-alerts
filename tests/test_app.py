@@ -328,7 +328,8 @@ def test_post_vote_savings_question_targets_offers(client):
         csrf = s["csrf"]
     polls_page = client.get("/admin/polls/").data
     assert b"retirement savings" in polls_page and b"1 answers" in polls_page and b"0 linked" in polls_page
-    assert b"Clicks by savings answer" in client.get("/admin/offers/").data
+    offers_page = client.get("/admin/offers/").data
+    assert b"Clicks by savings answer" in offers_page and b"<title>Offers \xe2\x80\x94" in offers_page
     form = {"csrf": csrf, "headline": news.headline, "url": news.url, "active": "1"}
     client.post(f"/admin/offers/{news.id}", data={**form, "audience": "not_low"})
     assert db.session.get(Offer, news.id).audience == "not_low"
@@ -428,6 +429,8 @@ def test_newsletter_sponsor_slots_rotate():
         for d in range(21, 27):  # look-alikes sharing a group never share an issue
             p = nl.pick_sponsors(dt.datetime(2026, 9, d))
             assert {p["top"]["name"], p["mid"]["name"]} != {"a1", "a2"}
+        story = nl.story_block({"url": "/some-story/", "title": "T", "image_url": ""}, "2026-09-21-daily")
+        assert "/some-story/?utm_source=newsletter&utm_medium=email&utm_campaign=2026-09-21-daily&utm_content=comment#comments" in story
         html = nl.sponsor_block(banners[1], "mid", "2026-09-21-daily")
         assert "SPONSORED" in html and "?o=1&amp;sub1=pda&amp;sub2=2026-09-21-daily&amp;sub3=mid&amp;sub4=b" in html
         assert f'{nl.SITE}/static/img/sponsors/b.jpg' in html
@@ -447,8 +450,12 @@ def test_comments_flow(client):
     assert b"0 Comments" in client.get(url).data
     r = client.post(f"{url}comment", data={"name": "Pat", "body": "Well said.", "email": ""})
     assert r.status_code == 302 and r.headers["Location"].endswith("?comment=pending#comments")
-    assert b"awaiting review" in client.get(url + "?comment=pending").data and b"Well said." not in client.get(url).data
-    assert client.post(f"{url}comment", data={"name": "x", "body": "hi"}).headers["Location"].endswith("?comment=invalid#comment-form")
+    # the commenter sees their own pending comment straight away; nobody else does
+    assert b"awaiting review" in client.get(url + "?comment=pending").data and b"only you can see this" in client.get(url).data
+    assert b"Well said." not in client.application.test_client().get(url).data
+    assert client.post(f"{url}comment", data={"name": "x", "body": " "}).headers["Location"].endswith("?comment=invalid#comment-form")
+    client.post(f"{url}comment", data={"body": "No name given"})  # name is optional
+    assert Comment.query.filter_by(body="No name given").first().name == "Anonymous"
     assert client.post(f"{url}comment", data={"name": "Bot", "body": "spam", "website": "x"}).status_code == 302
     assert Comment.query.filter_by(name="Bot").count() == 0
     c = Comment.query.filter_by(name="Pat").first()

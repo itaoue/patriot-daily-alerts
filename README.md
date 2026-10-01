@@ -25,7 +25,7 @@ GitHub (main 分支)  ──push──▶  Railway 自动构建 (Nixpacks)  ─�
 - **邮件订阅**：三处订阅入口（底部横幅、侧栏、文中）；蜜罐防机器人；退订页 `/remove-from-our-email-list/`；可选推送到 BigMailer
 - **联系表单**：留言入库，后台可查看
 - **邮件提醒**：有新评论或联系表单留言时发邮件给编辑，邮件里有一键 Approve / Spam 链接（签名令牌，无需登录）。Railway 变量：`NOTIFY_EMAIL`（收件人）加发信通道，二选一：`RESEND_API_KEY`（推荐，HTTPS 接口）或 `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD`（如 Gmail 应用专用密码）。后台 Comments 页有 “Send test email” 按钮验证配置。
-- **读者评论**：文章页底部评论区（姓名 + 可选邮箱 + 内容），蜜罐防机器人、每人每小时限 5 条；默认进后台 Comments 页审核后显示（Railway 变量 `COMMENTS_AUTO_APPROVE=1` 可改为无链接即自动通过，`COMMENTS_ENABLED=0` 关闭评论）
+- **读者评论**：文章页底部评论区（只需填内容，姓名可选、留空显示 Anonymous，浏览器会记住姓名；评论者本人可立即看到自己待审核的评论），蜜罐防机器人、每人每小时限 5 条；默认进后台 Comments 页审核后显示（Railway 变量 `COMMENTS_AUTO_APPROVE=1` 可改为无链接即自动通过，`COMMENTS_ENABLED=0` 关闭评论）
 - **SEO**：canonical、Open Graph、`NewsArticle` JSON-LD、`/feed/` RSS、`/sitemap.xml`、`/robots.txt`
 - **后台 Newsroom** `/admin/`：密码登录、CSRF 保护、文章增删改（草稿 / 定时发布 / 置顶头条）、静态页编辑、订阅者导出 CSV、留言箱；正文 HTML 经 bleach 过滤
 - 响应式布局、无障碍（跳转链接、aria、减少动画偏好）

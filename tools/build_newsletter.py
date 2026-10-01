@@ -77,11 +77,13 @@ def story_block(p, campaign):
 <tr><td style="padding:22px 25px 6px;font-family:{FONT};font-size:26px;line-height:120%;font-weight:700;color:{INK};text-align:center;">
   <a href="{u}" target="_blank" style="color:{INK};text-decoration:underline;">{esc(p["title"])}</a></td></tr>
 {img}
-<tr><td align="center" style="padding:10px 25px 24px;">
+<tr><td align="center" style="padding:10px 25px 10px;">
   <table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr>
     <td align="center" bgcolor="{RED}" style="background:{RED};border-radius:3px;padding:10px 28px;">
       <a href="{u}" target="_blank" style="font-family:{FONT};font-size:18px;line-height:120%;color:#ffffff;text-decoration:none;font-weight:700;letter-spacing:.02em;">READ MORE</a>
     </td></tr></table></td></tr>
+<tr><td align="center" style="padding:0 25px 22px;font-family:{FONT};font-size:15px;line-height:130%;">
+  <a href="{u}&utm_content=comment#comments" target="_blank" style="color:{NAVY};text-decoration:underline;font-weight:700;">What do you think? Leave a comment</a></td></tr>
 <tr><td style="padding:0 25px;"><div style="border-top:1px solid {RULE};font-size:0;line-height:0;">&nbsp;</div></td></tr>'''
 
 
