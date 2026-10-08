@@ -336,6 +336,34 @@
       "audience": "all",
       "weight": 5,
       "active": true
+    },
+    {
+      "name": "SeniorDiscountClub - born 1939-1969 check",
+      "category": "seniors",
+      "headline": "People Born 1939-1969 Are Due A Large Surprise This Week",
+      "blurb": "",
+      "cta": "Learn More",
+      "url": "https://united.seniordiscount.us/click.php?key=dw3sfzrbvbg07nzyyzdp&external_id={clickid}",
+      "image_url": "/static/img/sponsors/seniors-thursday-check.jpg",
+      "label": "SeniorDiscountClub",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 5,
+      "active": true
+    },
+    {
+      "name": "SeniorDiscountClub - retirees $100 bill",
+      "category": "seniors",
+      "headline": "Retirees On SS Are Due A Large Surprise This Week",
+      "blurb": "",
+      "cta": "Learn More",
+      "url": "https://united.seniordiscount.us/click.php?key=dw3sfzrbvbg07nzyyzdp&external_id={clickid}",
+      "image_url": "/static/img/sponsors/seniors-thursday-100.jpg",
+      "label": "SeniorDiscountClub",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 5,
+      "active": true
     }
   ]
 }
