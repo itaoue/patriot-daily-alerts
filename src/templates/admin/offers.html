@@ -2,9 +2,9 @@
 {% block title %}Offers{% endblock %}
 {% block content %}
 <div class="ah-row"><h1>Offers</h1><a class="btn" href="{{ url_for('admin.edit_offer') }}">New offer</a></div>
-<p>Up to 3 active offers (highest weight first) show under poll results. Clicks go through <code>/go/&lt;id&gt;/</code>; put <code>{subid}</code> in the destination URL to pass the click id and the reader's savings answer (e.g. <code>pda-o3-p12-c456-s50k</code>) to the affiliate network. Email link scanners and crawlers are logged separately and left out of the numbers.</p>
+<p>Up to 3 active offers (highest weight first) show under poll results. Clicks go through <code>/go/&lt;id&gt;/</code>; for Everflow links end the destination URL with <code>sub1=pda-web&amp;sub2={offer}&amp;sub3={page}&amp;sub4={click}&amp;sub5={segment}</code> (offer, story or poll, click id, savings answer); for other networks <code>{subid}</code> packs them into one value (e.g. <code>pda-o3-p12-c456-s50k</code>). Email link scanners and crawlers are logged separately and left out of the numbers.</p>
 <table>
-  <thead><tr><th>Offer</th><th>Status</th><th>Audience</th><th>Weight</th><th>Impressions</th><th>Clicks 7d</th><th>Clicks total</th><th>CTR</th><th>Bot hits</th></tr></thead>
+  <thead><tr><th>Offer</th><th>Status</th><th>Audience</th><th>Weight</th><th>Impressions</th><th>Clicks 7d</th><th>Clicks total</th><th>CTR</th><th>Bot hits</th><th>Conv.</th><th>Revenue</th><th>EPC</th></tr></thead>
   <tbody>
   {% for o in offers %}
     {% set clicks = total.get(o.id, 0) %}
@@ -18,10 +18,30 @@
       <td>{{ clicks }}</td>
       <td>{{ '%.1f'|format(100 * clicks / o.impressions) ~ '%' if o.impressions else '—' }}</td>
       <td>{{ bots.get(o.id, 0) }}</td>
+      {% set c = conv.get(o.id) %}
+      <td>{{ c.n if c else 0 }}{% if c and c.rejected %}<br><span style="color:var(--muted)">{{ c.rejected }} dropped</span>{% endif %}</td>
+      <td>{{ '$%.2f'|format(c.revenue) if c else '—' }}</td>
+      <td>{{ '$%.2f'|format(c.revenue / clicks) if c and clicks else '—' }}</td>
     </tr>
-  {% else %}<tr><td colspan="9">No offers yet.</td></tr>{% endfor %}
+  {% else %}<tr><td colspan="12">No offers yet.</td></tr>{% endfor %}
   </tbody>
 </table>
+<h2 style="margin-top:32px">Everflow conversions</h2>
+<p>Conversions count as revenue while they are in the Everflow report; ones that later drop out (rejected or reversed) show as "dropped". EPC is revenue per human click. Site clicks are matched through <code>sub4=c&lt;click&gt;</code>; conversions from newsletter links (<code>sub1=pda</code>) and anything we cannot match are totalled below. "Other" includes Patriot Daily Wire's conversions (<code>sub1=pdw…</code>), which share the Everflow account.
+{% if not everflow_key %}<b>EVERFLOW_API_KEY is not set, so the daily reconcile is off.</b>{% endif %}</p>
+<table>
+  <thead><tr><th>Source</th><th>Conversions</th><th>Revenue</th></tr></thead>
+  <tbody>
+  {% for key, label in [('web', 'Site, matched to an offer'), ('web_unmatched', 'Site, click not found'), ('email', 'Newsletter'), ('other', 'Other')] %}
+    {% set c = by_source.get(key) %}<tr><td>{{ label }}</td><td>{{ c.n if c else 0 }}</td><td>{{ '$%.2f'|format(c.revenue) if c else '—' }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<form method="post" action="{{ url_for('admin.everflow_sync') }}"><input type="hidden" name="csrf" value="{{ csrf }}">
+  Last daily reconcile: {{ last_sync or 'not run yet' }} <button class="btn" type="submit"{% if not everflow_key %} disabled{% endif %}>Reconcile now</button></form>
+<p>Global postback for Everflow (Postbacks, all offers, server postback URL):</p>
+<pre style="white-space:pre-wrap;word-break:break-all;background:#f6f6f6;padding:10px">{{ postback_url }}</pre>
+<p style="color:var(--muted)">Check that each token in braces appears in Everflow's token list; replace any that are named differently there. Keep this URL private: the key in it lets anyone record a conversion.</p>
 {% if offers %}
 <h2 style="margin-top:32px">Clicks by savings answer</h2>
 <p>Human clicks, all time. Compare with qualified leads in the network report (match on the <code>-s…</code> part of the subid).</p>

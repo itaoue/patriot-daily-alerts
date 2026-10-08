@@ -62,6 +62,8 @@ ruff check src tools tests && pytest -q
    | `GA_MEASUREMENT_ID` | 可选 | Google Analytics 4 的 `G-XXXX` |
    | `BIGMAILER_API_KEY` / `BIGMAILER_BRAND_ID` / `BIGMAILER_LIST_ID` | 可选 | 填了就把新订阅者同步到 BigMailer |
    | `AUTO_SEED` | 可选 | 默认 `1`；库为空时自动灌入示例数据，正式导入后可设为 `0` |
+   | `EVERFLOW_API_KEY` | 可选 | Everflow 合作方后台的 publisher API key；多个网络用逗号分隔（每个网络各发一个）。设了就在 `SCHEDULE_EVERFLOW`（默认 `05:00` 太平洋时间）每天对账 |
+   | `EVERFLOW_TIMEZONE_ID` / `EVERFLOW_POSTBACK_KEY` | 可选 | 默认 `80`（America/Los_Angeles）/ 空时由 `SECRET_KEY` 派生，只在要换 postback 密钥时设置 |
 
 5. **Settings → Networking** 生成域名，测试无误后绑定 `patriotdailyalerts.com` 自定义域名，并把 DNS 的 CNAME 指向 Railway。
 6. 之后每次 `git push main`，GitHub Actions 跑测试，Railway 自动重新部署。
@@ -145,6 +147,14 @@ python tools/write_stories.py --count 1   # 真写一篇进草稿
 Railway 变量：`RESEND_API_KEY`（推荐）或 `SMTP_*`，加上 `MAIL_FROM=news@patriotdailyalerts.com` 让发件地址和日报完全一致——读者做一次"加入联系人"才能对两边都生效。没配通道时不发信，注册流程照常。
 
 > 注意：如果之后在 BigMailer 里也配了加入列表的自动回复，两边会同时发，二选一。
+
+## Everflow 转化与收入
+
+- **链接格式**：网站上 Everflow 的 offer 链接写成 `?sub1=pda-web&sub2={offer}&sub3={page}&sub4={click}&sub5={segment}`，点击时依次填成 offer（`o5`）、文章或投票（`a12` / `p3`）、点击 ID（`c456`）、储蓄档位。邮件链接是 `sub1=pda`。其他网络用 `{subid}`，打包成一个值（`pda-o3-p0-c45-snone`），也能对回点击。
+- **与 PDW 共用账户**：PDW 和 PDA 用同一个 Everflow affiliate 账户，报表里也有 PDW 的转化（`sub1=pdw…`）。这些记为 Other，不会对到 PDA 的点击（两站的点击 ID 会重复）。
+- **Postback**：Everflow 的全局 postback 只有一个、指向 PDW；PDW 设 `EVERFLOW_FORWARD=pda=<PDA 后台的 postback URL>` 后，把 `sub1` 以 `pda` 开头的转化转发到 PDA 的 `/api/everflow/postback`，按 `sub4` 对回点击，记到对应 offer 和文章。完整 URL（带密钥）在后台 `/admin/offers/` 的 Everflow 部分。
+- **每日对账**：设置了 `EVERFLOW_API_KEY` 后，站内调度每天 05:00（太平洋时间）拉最近 30 天的转化明细，补漏（包括转发失败的）并更新被拒的单。后台也可以点 **Reconcile now**，或调用 `POST /api/everflow/sync?days=30`（`PUBLISH_TOKEN`）。
+- **后台**：`/admin/offers/` 每条 offer 显示转化数、收入和 EPC（收入 / 人类点击）；approved 与 pending 计入收入，rejected 等单独显示。
 
 ## 邮件 Newsletter
 

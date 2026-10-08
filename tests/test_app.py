@@ -278,6 +278,114 @@ def test_offer_cards_and_click_tracking(client):
     db.session.commit()
 
 
+def test_everflow_postback_sync_and_admin_revenue(client, monkeypatch):
+    from flask import current_app
+
+    from src import everflow
+    from src.models import Offer, OfferClick, OfferConversion, Post, db
+
+    post = Post.query.filter_by(status="published").first()
+    offer = Offer(name="EF test", headline="EF offer", placement="both", weight=1,
+                  url="https://ef.example/X/Y/?sub1=pda-web&sub2={offer}&sub3={page}&sub4={click}&sub5={segment}")
+    db.session.add(offer)
+    db.session.commit()
+    ua = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Safari/604.1"}
+    loc = client.get(f"/go/{offer.id}/?a={post.id}", headers=ua).headers["Location"]
+    click = OfferClick.query.filter_by(offer_id=offer.id).one()
+    assert loc == f"https://ef.example/X/Y/?sub1=pda-web&sub2=o{offer.id}&sub3=a{post.id}&sub4=c{click.id}&sub5=none"
+
+    key = everflow.postback_key(current_app.config)
+    assert key in everflow.postback_url(current_app.config) and "sub4={sub4}" in everflow.postback_url(current_app.config)
+    pb = {"tid": "T1", "sub1": "pda-web", "sub2": f"o{offer.id}", "sub4": f"c{click.id}", "payout": "90.00", "offer": "11"}
+    assert client.get("/api/everflow/postback", query_string={**pb, "key": "wrong"}).status_code == 403
+    assert client.get("/api/everflow/postback", query_string={"key": key}).status_code == 400
+    for _ in range(2):  # a repeated postback updates the same row
+        assert client.get("/api/everflow/postback", query_string={**pb, "key": key}).data == b"ok"
+    conv = OfferConversion.query.filter_by(transaction_id="T1").one()
+    assert (conv.offer_id, conv.post_id, conv.click_id, conv.payout, conv.source) == (offer.id, post.id, click.id, 90.0, "web")
+    client.get("/api/everflow/postback", query_string={"key": key, "tid": "T0", "sub1": "pda", "payout": "{payout_amount}"})
+    assert OfferConversion.query.filter_by(transaction_id="T0").one().payout == 0.0  # unfilled token
+
+    # a sister-site conversion (PDW shares the Everflow account) is kept as "other": its click ids are not ours
+    client.get("/api/everflow/postback", query_string={"key": key, "tid": "TQ", "sub1": "pdw-web", "sub4": f"c{click.id}"})
+    tq = OfferConversion.query.filter_by(transaction_id="TQ").one()
+    assert tq.source == "other" and tq.click_id is None and tq.offer_id is None
+
+    # daily reconcile: T1 dropped out of the report (rejected), T2 is a {subid}-style sub1 with no postback, T3 is newsletter
+    # + an event, W1 is the sister site's (PDW shares the Everflow account): its click id must not match ours
+    from datetime import timedelta
+
+    from src.models import utcnow
+
+    OfferConversion.query.filter_by(transaction_id="T1").update({"converted_at": utcnow() - timedelta(days=3)})
+    db.session.commit()
+    report = [
+        {"transaction_id": "T2", "revenue": 90, "sub1": f"pda-o{offer.id}-p0-c{click.id}-snone",
+         "relationship": {"offer": {"network_offer_id": 11, "name": "Emma"}}, "conversion_unix_timestamp": 1790000000},
+        {"transaction_id": "T3", "revenue": 90, "sub1": "pda", "sub2": "2026-10-02-daily"},
+        {"transaction_id": "T3", "conversion_id": "E9", "is_event": True, "revenue": 5, "sub1": "pda"},
+        {"transaction_id": "W1", "revenue": 40, "sub1": "pdw-web", "sub2": f"o{offer.id}", "sub4": f"c{click.id}"},
+    ]
+    sent = []
+
+    class Resp:
+        def __init__(self, rows):
+            self.rows = rows
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"conversions": self.rows, "paging": {"total_count": len(report)}}
+
+    def fake_post(url, params, json, headers, timeout):
+        sent.append((url, params["page"], json["from"], headers["X-Eflow-API-Key"]))
+        return Resp(report[:2] if params["page"] == 1 else report[2:])  # page 2 is full, so paging total ends it
+
+    monkeypatch.setattr(everflow, "PAGE_SIZE", 2)
+    monkeypatch.setattr(everflow.requests, "post", fake_post)
+    current_app.config.update(EVERFLOW_API_KEY="", PUBLISH_TOKEN="t0k3n")
+    auth = {"Authorization": "Bearer t0k3n"}
+    assert client.post("/api/everflow/sync", headers=auth).status_code == 400  # no key yet
+    current_app.config["EVERFLOW_API_KEY"] = "ef-key"
+    assert client.post("/api/everflow/sync").status_code == 401
+    r = client.post("/api/everflow/sync", headers=auth).get_json()
+    assert r["ok"] and r["conversions"] == 4 and r["created"] == 4 and r["matched_to_clicks"] == 1
+    assert r["not_reported"] == 1 and r["by_source"]["email"] == {"n": 2, "revenue": 95.0}
+    assert r["by_source"]["other"] == {"n": 1, "revenue": 40.0}
+    assert r["sub1_prefixes"] == {"web": 1, "email": 2, "pdw": 1} and r["networks"] == 1
+    got = []
+    monkeypatch.setattr(everflow.requests, "get", lambda url, params, timeout, headers: got.append((url, headers)) or
+                        type("R", (), {"content": b'{"offers": []}', "status_code": 200})())
+    assert client.get("/api/everflow/get?path=/v1/affiliates/offersrunnable").status_code == 401
+    assert client.get("/api/everflow/get?path=/v2/networks/x", headers=auth).status_code == 400
+    assert client.get("/api/everflow/get?path=/v1/affiliates/offersrunnable", headers=auth).get_json() == {"offers": []}
+    assert got == [("https://api.eflow.team/v1/affiliates/offersrunnable", {"X-Eflow-API-Key": "ef-key"})]
+    current_app.config["EVERFLOW_API_KEY"] = "ef-key, ef-key-2"  # one key per network
+    sent.clear()
+    client.post("/api/everflow/sync", headers=auth)
+    assert sorted({k for *_, k in sent}) == ["ef-key", "ef-key-2"]
+    assert [p for _, p, _, _ in sent] == [1, 2, 1, 2] and sent[0][0].endswith("/v1/affiliates/reporting/conversions")
+    assert OfferConversion.query.filter_by(transaction_id="T1").one().status == "not_reported"
+    t2 = OfferConversion.query.filter_by(transaction_id="T2").one()
+    assert t2.offer_id == offer.id and t2.payout == 90.0 and t2.network_offer_name == "Emma" and t2.converted_at.year == 2026
+    assert OfferConversion.query.filter_by(transaction_id="T3:E9").one().payout == 5.0
+    assert OfferConversion.query.filter_by(transaction_id="T3").one().source == "email"
+    w1 = OfferConversion.query.filter_by(transaction_id="W1").one()
+    assert (w1.source, w1.click_id, w1.offer_id) == ("other", None, None)
+
+    client.post("/admin/login", data={"password": "ci-password"})
+    html = client.get("/admin/offers/").get_data(as_text=True)
+    assert "<title>Offers —" in html and "/api/everflow/postback?key=" in html
+    row = html[html.index("EF offer"):html.index("</tr>", html.index("EF offer"))]
+    assert "1 dropped" in row and "$90.00" in row  # T2 counts, T1 does not; EPC = $90 / 1 click
+
+    db.session.delete(offer)
+    OfferConversion.query.delete()
+    db.session.commit()
+    current_app.config["EVERFLOW_API_KEY"] = ""
+
+
 def test_post_vote_savings_question_targets_offers(client):
     from flask import current_app
 
@@ -635,6 +743,17 @@ def test_scheduler_claims_once_and_dispatches_when_due(client, monkeypatch):
     with live_app.app_context():
         st = scheduler.status(live_app)
     assert st["enabled"] and "dispatch:stories:2026-09-12" in st["recent"]
+
+    # the Everflow reconcile runs in the app, only when its key is set
+    monkeypatch.setattr(scheduler, "run_local", lambda job, config: "3 conversions, 1 new")
+    live_app.config.update(SCHEDULE_EVERFLOW="05:00", EVERFLOW_API_KEY="")
+    assert scheduler.tick(live_app, datetime(2026, 9, 13, 5, 1, tzinfo=tz)) == []
+    live_app.config["EVERFLOW_API_KEY"] = "ef-key"
+    assert scheduler.tick(live_app, datetime(2026, 9, 13, 5, 2, tzinfo=tz)) == ["everflow"]
+    assert scheduler.tick(live_app, datetime(2026, 9, 13, 5, 3, tzinfo=tz)) == []
+    with live_app.app_context():
+        assert scheduler.status(live_app)["recent"]["dispatch:everflow:2026-09-13"].endswith("3 conversions, 1 new")
+    live_app.config["EVERFLOW_API_KEY"] = ""
 
 
 def test_scheduler_status_endpoint_requires_token(client):

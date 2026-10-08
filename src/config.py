@@ -38,6 +38,13 @@ class Config:
 
     GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", "G-7J6WNSF6DJ")  # GA4 property 371513253
 
+    # Everflow publisher API: conversions come in by postback and are reconciled from the reporting API once a day.
+    EVERFLOW_API_KEY = os.environ.get("EVERFLOW_API_KEY", "")
+    EVERFLOW_API_URL = os.environ.get("EVERFLOW_API_URL", "https://api.eflow.team").rstrip("/")
+    EVERFLOW_TIMEZONE_ID = int(os.environ.get("EVERFLOW_TIMEZONE_ID", "80"))  # Everflow's id for America/Los_Angeles
+    EVERFLOW_POSTBACK_KEY = os.environ.get("EVERFLOW_POSTBACK_KEY", "")  # optional; derived from SECRET_KEY when empty
+    SCHEDULE_EVERFLOW = os.environ.get("SCHEDULE_EVERFLOW", "05:00")  # daily reconcile, HH:MM in SCHEDULE_TZ
+
     # In-app scheduler: the site triggers the GitHub workflows itself (GitHub's cron kept dropping runs).
     # Needs a fine-grained token with Actions: read and write on the repo; times are HH:MM in SCHEDULE_TZ.
     GITHUB_DISPATCH_TOKEN = os.environ.get("GITHUB_DISPATCH_TOKEN", "")

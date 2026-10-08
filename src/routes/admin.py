@@ -4,6 +4,7 @@ from functools import wraps
 
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 
+from src import everflow
 from src.models import (
     OFFER_AUDIENCES,
     SAVINGS_BANDS,
@@ -12,10 +13,12 @@ from src.models import (
     ContactMessage,
     Offer,
     OfferClick,
+    OfferConversion,
     Page,
     Poll,
     Post,
     QualifierAnswer,
+    Setting,
     Subscriber,
     db,
     utcnow,
@@ -266,8 +269,41 @@ def offers():
                                  .group_by(OfferClick.offer_id, OfferClick.segment).all()):
         by_segment[(offer_id, segment or "")] = n
     rows = Offer.query.order_by(Offer.active.desc(), Offer.weight.desc(), Offer.id.desc()).all()
+    conv, by_source = {}, {}
+    for c in OfferConversion.query.all():
+        counted = c.status in everflow.COUNTED_STATUSES
+        key = c.source if c.source != "web" or c.offer_id else "web_unmatched"
+        for bucket, k in ((conv, c.offer_id), (by_source, key)):
+            if k is None:
+                continue
+            agg = bucket.setdefault(k, {"n": 0, "revenue": 0.0, "rejected": 0})
+            agg["n" if counted else "rejected"] += 1
+            agg["revenue"] += c.payout if counted else 0.0
+    last_sync = (db.session.query(Setting.value).filter(Setting.key.like("dispatch:everflow:%"))
+                 .order_by(Setting.key.desc()).limit(1).scalar())  # one row per day: the newest
     return render_template("admin/offers.html", offers=rows, total=total, week=week, bots=bots, by_segment=by_segment,
-                           audiences=OFFER_AUDIENCES, bands=[("", "Not answered", None)] + SAVINGS_BANDS)
+                           audiences=OFFER_AUDIENCES, bands=[("", "Not answered", None)] + SAVINGS_BANDS,
+                           conv=conv, by_source=by_source, last_sync=last_sync,
+                           everflow_key=bool(current_app.config.get("EVERFLOW_API_KEY")),
+                           postback_url=everflow.postback_url(current_app.config))
+
+
+@admin_bp.route("/offers/everflow-sync", methods=["POST"])
+@login_required
+def everflow_sync():
+    """Reconcile the last 30 days of Everflow conversions now."""
+    import requests
+
+    try:
+        r = everflow.sync(current_app.config, days=30)
+    except requests.RequestException as e:
+        flash(f"Everflow API error: {str(e)[:200]}", "error")
+        return redirect(url_for("admin.offers"))
+    if r.get("ok"):
+        flash(f"Everflow: {r['conversions']} conversions ({r['created']} new, {r['matched_to_clicks']} matched to clicks).", "ok")
+    else:
+        flash(f"Everflow: {r.get('error')}", "error")
+    return redirect(url_for("admin.offers"))
 
 
 @admin_bp.route("/offers/new", methods=["GET", "POST"])

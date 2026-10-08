@@ -259,6 +259,59 @@ def upsert_offers():
     return jsonify(ok=True, offers=[{"id": o.id, "name": o.name, "created": c, "active": o.active} for o, c in done])
 
 
+# ---- Everflow ---------------------------------------------------------------------------------
+
+@api_bp.route("/everflow/postback", methods=["GET", "POST"])
+def everflow_postback():
+    """Global postback from Everflow. The URL carries a secret key; see src/everflow.py and the admin offers page."""
+    from src import everflow
+
+    args = request.values
+    if not secrets.compare_digest(args.get("key", ""), everflow.postback_key(current_app.config)):
+        return "forbidden", 403
+    row, _ = everflow.record(args.get("tid"), [args.get(f"sub{i}") for i in range(1, 6)], payout=args.get("payout"),
+                             status=args.get("status") or None, network_offer_id=args.get("offer", ""))
+    if row is None:
+        return "missing tid", 400
+    db.session.commit()
+    return "ok"
+
+
+@api_bp.route("/everflow/sync", methods=["POST"])
+def everflow_sync():
+    """Reconcile conversions from the Everflow reporting API now (the scheduler also does this daily)."""
+    from src import everflow
+
+    if not _pipeline_authorized():
+        return jsonify(error="unauthorized"), 401
+    days = min(max(request.args.get("days", 30, type=int), 1), 90)
+    try:
+        result = everflow.sync(current_app.config, days)
+    except requests.RequestException as e:
+        body = getattr(getattr(e, "response", None), "text", "") or ""
+        return jsonify(ok=False, error=str(e)[:300], body=body[:500]), 502
+    return jsonify(result), (200 if result.get("ok") else 400)
+
+
+@api_bp.route("/everflow/get")
+def everflow_get():
+    """Read-only pass-through to the Everflow affiliate API (offers, creatives), using the key held on the server.
+    ?path=/v1/affiliates/... plus any other query args; &network=<n> picks the n-th key in EVERFLOW_API_KEY."""
+    from src import everflow
+
+    if not _pipeline_authorized():
+        return jsonify(error="unauthorized"), 401
+    path = request.args.get("path", "")
+    keys = everflow.api_keys(current_app.config)
+    n = request.args.get("network", 0, type=int)
+    if not re.fullmatch(r"/v1/affiliates/[A-Za-z0-9_/\-]+", path) or ".." in path or not 0 <= n < len(keys):
+        return jsonify(error="path must be /v1/affiliates/... and network a configured key"), 400
+    params = {k: v for k, v in request.args.items() if k not in ("path", "network")}
+    r = requests.get(f"{current_app.config['EVERFLOW_API_URL']}{path}", params=params, timeout=60,
+                     headers={"X-Eflow-API-Key": keys[n]})
+    return current_app.response_class(r.content, status=r.status_code, mimetype="application/json")
+
+
 @api_bp.route("/polls", methods=["POST"])
 def create_poll():
     """Create the day's poll (used by the newsletter builder). Returns the vote/results URLs."""

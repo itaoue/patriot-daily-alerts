@@ -2,8 +2,9 @@
 
 GitHub's own cron dropped or delayed most of our runs, so the site (which is up around the clock on
 Railway) triggers ``workflow_dispatch`` itself: the story batch at 19:00 America/Los_Angeles and the
-newsletter at 20:00. Active only when GITHUB_DISPATCH_TOKEN is set (a fine-grained token with
-Actions: read and write on the repo).
+newsletter at 20:00. Those two need GITHUB_DISPATCH_TOKEN (a fine-grained token with Actions: read
+and write on the repo). One job runs in the app itself: the daily Everflow conversion reconcile at
+05:00, when EVERFLOW_API_KEY is set.
 
 Each job claims one ``settings`` row per day (``dispatch:<job>:<YYYY-MM-DD>``) before calling GitHub,
 so two gunicorn workers, or a restart, never dispatch the same job twice. A job that was missed while
@@ -28,9 +29,10 @@ TICK_SECONDS = 60
 
 JOBS = [
     {"name": "stories", "workflow": "content.yml", "setting": "SCHEDULE_STORIES",
-     "inputs": {"count": "5", "status": "published", "guard": "true"}},
+     "inputs": {"count": "5", "status": "published", "guard": "true"}, "needs": "GITHUB_DISPATCH_TOKEN"},
     {"name": "newsletter", "workflow": "newsletter.yml", "setting": "SCHEDULE_NEWSLETTER",
-     "inputs": {"edition": "daily", "guard": "true"}},
+     "inputs": {"edition": "daily", "guard": "true"}, "needs": "GITHUB_DISPATCH_TOKEN"},
+    {"name": "everflow", "run": "everflow_sync", "setting": "SCHEDULE_EVERFLOW", "needs": "EVERFLOW_API_KEY"},
 ]
 
 
@@ -42,7 +44,7 @@ def _target(job, config, now):
 def due_jobs(config, now=None):
     """Jobs whose target time today has passed but not by more than CATCH_UP; `now` is tz-aware."""
     now = now or datetime.now(ZoneInfo(config["SCHEDULE_TZ"]))
-    return [j for j in JOBS if _target(j, config, now) <= now < _target(j, config, now) + CATCH_UP]
+    return [j for j in JOBS if config.get(j["needs"]) and _target(j, config, now) <= now < _target(j, config, now) + CATCH_UP]
 
 
 def claim(job, day):
@@ -72,6 +74,18 @@ def dispatch(job, config):
     return r.status_code
 
 
+def run_local(job, config):
+    """A job that runs inside the app instead of on GitHub; returns a short note for the claim row."""
+    if job["run"] == "everflow_sync":
+        from src import everflow
+
+        result = everflow.sync(config, days=30)
+        if not result.get("ok"):
+            raise RuntimeError(result.get("error"))
+        return f"{result['conversions']} conversions, {result['created']} new"
+    raise ValueError(job["run"])
+
+
 def tick(app, now=None):
     """One pass: dispatch every due job that nobody has dispatched today. Returns the names fired."""
     config = app.config
@@ -81,6 +95,18 @@ def tick(app, now=None):
         day = now.strftime("%Y-%m-%d")
         for job in due_jobs(config, now):
             if not claim(job, day):
+                continue
+            if job.get("run"):
+                try:
+                    note = run_local(job, config)
+                except Exception as e:  # noqa: BLE001 - a failed reconcile retries on the next tick
+                    db.session.rollback()
+                    log.warning("scheduler: %s failed (%s); will retry", job["name"], e)
+                    release(job, day)
+                    continue
+                db.session.get(Setting, f"dispatch:{job['name']}:{day}").value = f"ran {now.isoformat()}: {note}"
+                db.session.commit()
+                fired.append(job["name"])
                 continue
             try:
                 status = dispatch(job, config)
@@ -108,7 +134,7 @@ def status(app):
             "enabled": bool(app.config.get("GITHUB_DISPATCH_TOKEN")),
             "timezone": app.config["SCHEDULE_TZ"],
             "now": now.isoformat(timespec="seconds"),
-            "jobs": {j["name"]: {"workflow": j["workflow"], "at": app.config.get(j["setting"]),
+            "jobs": {j["name"]: {"workflow": j.get("workflow", "in-app"), "at": app.config.get(j["setting"]),
                                  "due_now": j in due_jobs(app.config, now)} for j in JOBS},
             "recent": {r.key: r.value for r in rows},
         }
@@ -116,7 +142,7 @@ def status(app):
 
 def start(app):
     """Run `tick` every minute in a daemon thread (one per gunicorn worker; the claim row dedupes)."""
-    if not app.config.get("GITHUB_DISPATCH_TOKEN") or app.config.get("TESTING"):
+    if not any(app.config.get(j["needs"]) for j in JOBS) or app.config.get("TESTING"):
         return None
 
     def loop():
@@ -130,5 +156,6 @@ def start(app):
 
     t = threading.Thread(target=loop, name="workflow-scheduler", daemon=True)
     t.start()
-    log.info("scheduler: started (%s)", ", ".join(f"{j['name']} {app.config.get(j['setting'])}" for j in JOBS))
+    log.info("scheduler: started (%s)", ", ".join(f"{j['name']} {app.config.get(j['setting'])}" for j in JOBS
+                                                  if app.config.get(j["needs"])))
     return t

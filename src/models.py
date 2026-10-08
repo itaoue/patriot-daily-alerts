@@ -224,6 +224,26 @@ class OfferClick(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow, index=True)
 
 
+class OfferConversion(db.Model):
+    """A network conversion (Everflow postback or reporting API), tied back to our click through the sub values."""
+
+    __tablename__ = "offer_conversions"
+    id = db.Column(db.Integer, primary_key=True)
+    transaction_id = db.Column(db.String(64), unique=True, nullable=False)  # Everflow's id; postback and API both carry it
+    # plain ids, no foreign keys: deleting an offer (and its clicks) must keep the money it earned on record
+    click_id = db.Column(db.Integer, nullable=True, index=True)
+    offer_id = db.Column(db.Integer, nullable=True, index=True)
+    post_id = db.Column(db.Integer, nullable=True, index=True)
+    source = db.Column(db.String(8), default="other", index=True)  # web | email | other, from sub1
+    network_offer_id = db.Column(db.String(32), default="")
+    network_offer_name = db.Column(db.String(200), default="")
+    payout = db.Column(db.Float, default=0.0)
+    status = db.Column(db.String(16), default="pending", index=True)  # as Everflow reports it; see COUNTED_STATUSES
+    subs = db.Column(db.String(600), default="")  # sub1..sub5 joined with "|", for reference
+    converted_at = db.Column(db.DateTime, default=utcnow, index=True)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+
 class Comment(db.Model):
     """Reader comment on a story. Held as "pending" until approved in the newsroom (unless COMMENTS_AUTO_APPROVE)."""
 
