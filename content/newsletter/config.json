@@ -119,6 +119,16 @@
         "advertiser": "The Savings Mentor",
         "cta": "Learn More",
         "active": true
+      },
+      {
+        "name": "home-insurance-zip-map",
+        "image": "/static/img/sponsors/home-insurance-zip-map.jpg",
+        "alt": "Who Has The Cheapest Home Insurance? (Check Your ZIP Code)",
+        "url": "https://www.dehyr.com/TQ39S5C8/XM6NCR7P/",
+        "group": "home-insurance",
+        "headline": "Who Has The Cheapest Home Insurance? (Check Your ZIP Code)",
+        "cta": "Check My ZIP",
+        "active": true
       }
     ]
   },
