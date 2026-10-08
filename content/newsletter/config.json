@@ -76,6 +76,16 @@
         "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id=pda_{campaign}_{slot}_{banner}",
         "group": "gifts",
         "active": true
+      },
+      {
+        "name": "auto-insurance-zip-map",
+        "image": "/static/img/sponsors/auto-insurance-zip-map.jpg",
+        "url": "https://www.dehyr.com/TQ39S5C8/XM6KL1QH/",
+        "group": "auto-insurance",
+        "active": true,
+        "alt": "Drivers: These ZIP Codes Pay the Most for Car Insurance. Is Yours on the List?",
+        "headline": "Drivers: These ZIP Codes Pay the Most for Car Insurance (Is Yours on the List?)",
+        "cta": "Click Here"
       }
     ]
   },

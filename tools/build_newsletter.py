@@ -136,6 +136,17 @@ def sponsor_block(b, slot, campaign):
     u = esc(sponsor_url(b, slot, campaign))
     src = b["image"] if b["image"].startswith("http") else f"{SITE}{b['image']}"
     label = esc((CONFIG.get("sponsors") or {}).get("label", "SPONSORED"))
+    if b.get("headline"):
+        # native ad: picture, linked headline, then "Sponsored" on the left and a pill CTA on the right (as the creative runs elsewhere)
+        h, cta = esc(b["headline"]), esc(b.get("cta") or "Click Here")
+        return f'''
+<tr><td style="padding:16px 25px 0;"><a href="{u}" target="_blank" rel="nofollow sponsored"><img src="{esc(src)}" width="550" alt="{h}" style="display:block;width:100%;max-width:550px;height:auto;border:0;border-radius:10px;outline:none;text-decoration:none;"></a></td></tr>
+<tr><td style="padding:10px 25px 0;font-family:{FONT};font-size:22px;line-height:128%;font-weight:700;"><a href="{u}" target="_blank" rel="nofollow sponsored" style="color:{INK};text-decoration:none;">{h}</a></td></tr>
+<tr><td style="padding:8px 25px 18px;"><table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+  <td style="font-family:{FONT};font-size:14px;color:{GREY};">{esc(b.get("advertiser") or "") + " | " if b.get("advertiser") else ""}Sponsored</td>
+  <td align="right"><a href="{u}" target="_blank" rel="nofollow sponsored" style="display:inline-block;padding:8px 26px;border:2px solid {INK};border-radius:999px;font-family:{FONT};font-size:15px;font-weight:700;color:{INK};text-decoration:none;">{cta}</a></td>
+</tr></table></td></tr>
+<tr><td style="padding:0 25px;"><div style="border-top:1px solid {RULE};font-size:0;line-height:0;">&nbsp;</div></td></tr>'''
     return f'''
 <tr><td style="padding:14px 25px 4px;font-family:{FONT};font-size:10px;line-height:120%;color:{GREY};text-align:center;letter-spacing:.12em;text-transform:uppercase;">{label}</td></tr>
 <tr><td align="center" style="padding:0 25px 16px;"><a href="{u}" target="_blank" rel="nofollow sponsored"><img src="{esc(src)}" width="550" alt="{esc(b.get("alt", ""))}" style="display:block;width:100%;max-width:550px;height:auto;border:1px solid {RULE};outline:none;text-decoration:none;"></a></td></tr>
@@ -353,7 +364,7 @@ def render(leads, trending, edition, date_et, campaign, view_url, poll=None, sub
 </body></html>'''
     def sponsor_text(k):
         b = sponsors.get(k)
-        return f"SPONSORED: {b.get('alt', '')}\n{sponsor_url(b, k, campaign)}\n\n" if b else ""
+        return f"SPONSORED: {b.get('headline') or b.get('alt', '')}\n{sponsor_url(b, k, campaign)}\n\n" if b else ""
 
     text = (f"{CONFIG['from_name']} - {date_et.strftime('%A, %B %d, %Y')}\n\n" + sponsor_text("top")
             + "\n\n".join(f"{p['title']}\n{link(p, campaign)}" for p in leads)
