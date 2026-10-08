@@ -108,6 +108,17 @@
         "advertiser": "SeniorDiscountClub",
         "cta": "Learn More",
         "active": true
+      },
+      {
+        "name": "ss-benefit-check-sign",
+        "image": "/static/img/sponsors/ss-benefit-check-sign.jpg",
+        "alt": "If You Get Social Security, Don't Skip This Month's Benefit Check",
+        "url": "https://united.seniordiscount.us/click.php?key=dw3sfzrbvbg07nzyyzdp&external_id=pda_{campaign}_{slot}_{banner}",
+        "group": "ss-benefit-check",
+        "headline": "If You Get Social Security, Don't Skip This Month's Benefit Check",
+        "advertiser": "The Savings Mentor",
+        "cta": "Learn More",
+        "active": true
       }
     ]
   },
