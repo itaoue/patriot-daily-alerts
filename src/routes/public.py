@@ -1,4 +1,5 @@
 import os
+import random
 import re
 from datetime import timedelta
 
@@ -18,6 +19,7 @@ from flask import (
 from sqlalchemy import or_
 
 from src.models import (
+    OFFER_SLOTS,
     SAVINGS_BAND_KEYS,
     SAVINGS_BANDS,
     Category,
@@ -168,7 +170,7 @@ def poll_results(poll_id):
         prior = QualifierAnswer.query.filter_by(contact_id=contact, question="savings").order_by(QualifierAnswer.updated_at.desc()).first()
         band = prior.answer if prior else ""
     offers = [o for o in Offer.query.filter_by(active=True).order_by(Offer.weight.desc(), Offer.id.desc())
-              if offer_visible(o.audience or "all", band)][:3]
+              if (o.placement or "poll") in ("poll", "both") and offer_visible(o.audience or "all", band)][:3]
     if offers and not _is_bot():
         Offer.query.filter(Offer.id.in_([o.id for o in offers])).update(
             {Offer.impressions: Offer.impressions + 1}, synchronize_session=False)
@@ -272,19 +274,56 @@ def _is_bot() -> bool:
     return request.method == "HEAD" or not ua or bool(_BOT_UA.search(ua))
 
 
+FEED_SIZE = 6  # "You May Like" grid under a story: all sponsored cards
+
+
+def _rotate(pool: list, limit: int) -> list:
+    """Weighted random pick (chance proportional to weight + 1), never two offers of the same category."""
+    picked = []
+    while pool and len(picked) < limit:
+        o = random.choices(pool, weights=[max(x.weight or 0, 0) + 1 for x in pool])[0]
+        picked.append(o)
+        pool = [x for x in pool if x is not o and not (o.category and x.category == o.category)]
+    return picked
+
+
+def _feed_ads() -> list:
+    """Image offers for the grid; counts an impression for human views."""
+    band = _savings_band()
+    pool = [o for o in Offer.query.filter_by(active=True).order_by(Offer.weight.desc(), Offer.id.desc())
+            if (o.placement or "poll") in ("feed", "both") and (o.feed_image_url or o.image_url)
+            and offer_visible(o.audience or "all", band)]
+    ads = _rotate(pool, FEED_SIZE)
+    if ads and not _is_bot():
+        Offer.query.filter(Offer.id.in_([o.id for o in ads])).update(
+            {Offer.impressions: Offer.impressions + 1}, synchronize_session=False)
+        db.session.commit()
+    return ads
+
+
 @public_bp.route("/go/<int:offer_id>/")
 def offer_click(offer_id):
-    """Tracked redirect for offer cards. ?p=<poll id> ties the click to the poll page it came from."""
+    """Tracked redirect for offer cards. ?p=<poll id> or ?a=<post id> ties the click to the page it came from;
+    ?s=feed marks clicks from the "You May Like" grid."""
     offer = Offer.query.get_or_404(offer_id)
     if not offer.active:
         return redirect(url_for("public.home"))
     poll_id = request.args.get("p", type=int)
-    click = OfferClick(offer_id=offer.id, poll_id=poll_id, voter=_voter_id(),
+    slot = request.args.get("s", "")
+    click = OfferClick(offer_id=offer.id, poll_id=poll_id, post_id=request.args.get("a", type=int), voter=_voter_id(),
+                       slot=slot if slot in OFFER_SLOTS else "",
                        user_agent=(request.user_agent.string or "")[:300], is_bot=_is_bot(), segment=_savings_band())
     db.session.add(click)
     db.session.commit()
     subid = f"pda-o{offer.id}-p{poll_id or 0}-c{click.id}-s{click.segment or 'none'}"
-    resp = redirect(offer.url.replace("{subid}", subid), 302)
+    page = f"a{click.post_id}" if click.post_id else f"p{poll_id or 0}"
+    # {subid} packs everything into one value; Everflow links split it over sub2..sub5 with sub1=pda-web
+    macros = {"{subid}": subid, "{clickid}": subid, "{offer}": f"o{offer.id}", "{page}": page,
+              "{click}": f"c{click.id}", "{segment}": click.segment or "none"}
+    url = offer.url
+    for macro, value in macros.items():
+        url = url.replace(macro, value)
+    resp = redirect(url, 302)
     resp.headers["X-Robots-Tag"] = "noindex, nofollow"
     resp.headers["Cache-Control"] = "no-store"
     return resp
@@ -442,7 +481,7 @@ def article_or_page(slug):
         mine = [i for i in (session.get("my_comments") or []) if isinstance(i, int)]
         my_pending = post.comments.filter(Comment.status == "pending", Comment.id.in_(mine)).order_by(Comment.created_at.asc()).all() if mine else []
         return render_template(
-            "article.html", post=post, related=related, most_read=most_read(5, post.id),
+            "article.html", post=post, related=related, most_read=most_read(5, post.id), feed=_feed_ads(),
             prev_post=prev_post, next_post=next_post, comments=comments, my_pending=my_pending,
             comment_state=request.args.get("comment"), comments_enabled=current_app.config["COMMENTS_ENABLED"],
         )

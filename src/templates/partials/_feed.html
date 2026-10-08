@@ -1,0 +1,13 @@
+{# "You May Like" grid under a story: sponsored offer cards only. #}
+<section class="feed" aria-label="You may like">
+  <div class="feed__head"><h2 class="mh-widget-title feed__title">You May Like</h2><span class="feed__note">Sponsored</span></div>
+  <div class="feed__grid">
+    {% for o in feed %}
+    <a class="feed__item" href="{{ url_for('public.offer_click', offer_id=o.id, a=post.id, s='feed') }}" rel="nofollow sponsored noopener" target="_blank">
+      <img class="feed__img" src="{{ o.feed_image_url or o.image_url }}" alt="" loading="lazy" decoding="async">
+      <strong class="feed__headline">{{ o.headline }}</strong>
+      <span class="feed__label">{% if o.label and o.label|lower != 'sponsored' %}{{ o.label }} | {% endif %}Sponsored</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>

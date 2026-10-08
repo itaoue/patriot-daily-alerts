@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import requests
 from flask import Blueprint, current_app, jsonify, redirect, render_template, request, url_for
 
-from src.models import Category, ContactMessage, Poll, Post, Subscriber, db, utcnow
+from src.models import OFFER_AUDIENCES, OFFER_PLACEMENTS, Category, ContactMessage, Offer, Poll, Post, Subscriber, db, utcnow
 from src.utils import make_excerpt, sanitize_html, slugify, valid_email
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -226,6 +226,37 @@ def publish():
     db.session.commit()
     return jsonify(ok=True, id=post.id, slug=post.slug, status=post.status, url=post.url,
                    admin_url=url_for("admin.edit_post", post_id=post.id)), (200 if existing else 201)
+
+
+@api_bp.route("/offers", methods=["POST"])
+def upsert_offers():
+    """Create or update offer cards in bulk (tools/push_offers.py). Matched by internal name; stats are kept."""
+    if not _pipeline_authorized():
+        return jsonify(error="unauthorized"), 401
+    rows = (request.get_json(silent=True) or {}).get("offers") or []
+    done = []
+    for row in rows:
+        name, headline, url = (str(row.get(k) or "").strip() for k in ("name", "headline", "url"))
+        if not (name and headline and url.startswith(("https://", "http://"))):
+            return jsonify(ok=False, error=f"offer {name or '?'}: name, headline and an http(s) url are required"), 400
+        offer = Offer.query.filter_by(name=name[:120]).first()
+        created = offer is None
+        offer = offer or Offer(name=name[:120])
+        offer.headline, offer.url = headline[:200], url[:1000]
+        offer.blurb = str(row.get("blurb") or "").strip()[:300]
+        offer.image_url = str(row.get("image_url") or "").strip()[:600]
+        offer.feed_image_url = str(row.get("feed_image_url") or "").strip()[:600]
+        offer.label = str(row.get("label") or "").strip()[:40] or "Sponsored"
+        offer.cta = str(row.get("cta") or "").strip()[:40] or "Learn more"
+        offer.category = str(row.get("category") or "").strip().lower()[:24]
+        offer.weight = int(row.get("weight") or 0)
+        offer.active = bool(row.get("active", True))
+        offer.audience = row.get("audience") if row.get("audience") in OFFER_AUDIENCES else "all"
+        offer.placement = row.get("placement") if row.get("placement") in OFFER_PLACEMENTS else "poll"
+        db.session.add(offer)
+        done.append((offer, created))
+    db.session.commit()
+    return jsonify(ok=True, offers=[{"id": o.id, "name": o.name, "created": c, "active": o.active} for o, c in done])
 
 
 @api_bp.route("/polls", methods=["POST"])

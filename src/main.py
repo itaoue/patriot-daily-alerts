@@ -16,8 +16,9 @@ def migrate_columns() -> None:
 
     added = {
         "posts": [("editor_notes", "TEXT DEFAULT ''"), ("sources", "TEXT DEFAULT ''")],
-        "offers": [("audience", "VARCHAR(16) DEFAULT 'all'")],
-        "offer_clicks": [("segment", "VARCHAR(8) DEFAULT ''")],
+        "offers": [("audience", "VARCHAR(16) DEFAULT 'all'"), ("placement", "VARCHAR(16) DEFAULT 'poll'"),
+                   ("category", "VARCHAR(24) DEFAULT ''"), ("feed_image_url", "VARCHAR(600) DEFAULT ''")],
+        "offer_clicks": [("segment", "VARCHAR(8) DEFAULT ''"), ("post_id", "INTEGER"), ("slot", "VARCHAR(8) DEFAULT ''")],
         "poll_votes": [("contact_id", "VARCHAR(36) DEFAULT ''")],
         "qualifier_answers": [("contact_id", "VARCHAR(36) DEFAULT ''")],
     }

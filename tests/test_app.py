@@ -639,3 +639,30 @@ def test_scheduler_claims_once_and_dispatches_when_due(client, monkeypatch):
 
 def test_scheduler_status_endpoint_requires_token(client):
     assert client.get("/api/scheduler").status_code == 401
+
+
+def test_article_you_may_like_grid_is_all_sponsored(client):
+    from src.models import Offer, OfferClick, Post, db
+
+    post = Post.query.filter_by(status="published").first()
+    ads = [Offer(name=f"Grid {i}", headline=f"Grid offer {i}", placement="feed", category=f"cat{i}",
+                 url="https://aff.example/x/?sub1=pda-web&sub2={offer}&sub3={page}&sub4={click}&sub5={segment}",
+                 image_url=f"/static/img/sponsors/g{i}.jpg", feed_image_url="/static/img/sponsors/wide.jpg" if i == 0 else "")
+           for i in range(8)]
+    poll_only = Offer(name="Poll only", headline="Poll-only offer", url="https://aff.example/p", image_url="/p.jpg", weight=999)
+    db.session.add_all(ads + [poll_only])
+    db.session.commit()
+
+    ua = {"User-Agent": "Mozilla/5.0 Safari"}
+    html = client.get(post.url, headers=ua).get_data(as_text=True)
+    feed = html[html.index('class="feed"'):html.index("</section>", html.index('class="feed"'))]
+    assert feed.count('class="feed__item"') == 6 and "Poll-only offer" not in feed  # six sponsored cards, no stories
+    assert "/static/img/sponsors/wide.jpg" in feed or "Grid offer 0" not in feed
+    first = next(o for o in ads if f"Grid offer {ads.index(o)}<" in feed)
+    r = client.get(f"/go/{first.id}/?a={post.id}&s=feed", headers=ua)
+    click = OfferClick.query.filter_by(offer_id=first.id).one()
+    assert click.slot == "feed" and click.post_id == post.id
+    assert r.headers["Location"] == f"https://aff.example/x/?sub1=pda-web&sub2=o{first.id}&sub3=a{post.id}&sub4=c{click.id}&sub5=none"
+    for o in ads + [poll_only]:
+        db.session.delete(o)
+    db.session.commit()

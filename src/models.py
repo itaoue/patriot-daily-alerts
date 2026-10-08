@@ -151,6 +151,14 @@ OFFER_AUDIENCES = {
 }
 
 
+OFFER_PLACEMENTS = {
+    "poll": "Poll results only",
+    "both": "Poll results and articles",
+    "feed": "Articles: \"You May Like\" grid only",
+}
+OFFER_SLOTS = ("feed",)  # where on the page a click came from; "" = the poll page
+
+
 def offer_visible(audience: str, band: str) -> bool:
     """band is the reader's SAVINGS_BANDS key, or "" if they haven't answered."""
     floor = next((amt for k, _, amt in SAVINGS_BANDS if k == band), None)
@@ -189,10 +197,13 @@ class Offer(db.Model):
     blurb = db.Column(db.String(300), default="")
     image_url = db.Column(db.String(600), default="")
     cta = db.Column(db.String(40), default="Learn more")
-    url = db.Column(db.String(1000), nullable=False)  # may contain {subid}, replaced with pda-o<offer>-p<poll>-c<click>
+    url = db.Column(db.String(1000), nullable=False)  # may contain {subid}, or Everflow's {offer} {page} {click} {segment}
     active = db.Column(db.Boolean, default=True, index=True)
     weight = db.Column(db.Integer, default=0)  # higher shows first
     audience = db.Column(db.String(16), default="all")  # key of OFFER_AUDIENCES: who sees this card, by savings answer
+    placement = db.Column(db.String(16), default="poll")  # key of OFFER_PLACEMENTS
+    category = db.Column(db.String(24), default="")  # e.g. "home", "finance": one grid never shows two of a kind
+    feed_image_url = db.Column(db.String(600), default="")  # optional 16:10 picture for the "You May Like" grid; falls back to image_url
     impressions = db.Column(db.Integer, default=0)  # human page views that showed this card
     created_at = db.Column(db.DateTime, default=utcnow)
     clicks = db.relationship("OfferClick", back_populates="offer", lazy="dynamic", cascade="all, delete-orphan")
@@ -204,6 +215,8 @@ class OfferClick(db.Model):
     offer_id = db.Column(db.Integer, db.ForeignKey("offers.id"), nullable=False, index=True)
     offer = db.relationship("Offer", back_populates="clicks")
     poll_id = db.Column(db.Integer, nullable=True, index=True)
+    post_id = db.Column(db.Integer, nullable=True, index=True)  # article the card was shown in, if any
+    slot = db.Column(db.String(8), default="")  # key of OFFER_SLOTS
     voter = db.Column(db.String(64), default="")
     user_agent = db.Column(db.String(300), default="")
     is_bot = db.Column(db.Boolean, default=False, index=True)  # link scanners / crawlers: kept but excluded from stats

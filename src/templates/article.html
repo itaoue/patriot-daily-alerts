@@ -81,6 +81,7 @@
       <div class="mh-post-nav-prev">{% if prev_post %}<span>‹ Previous</span><p><a href="{{ prev_post.url }}">{{ prev_post.title }}</a></p>{% endif %}</div>
       <div class="mh-post-nav-next">{% if next_post %}<span>Next ›</span><p><a href="{{ next_post.url }}">{{ next_post.title }}</a></p>{% endif %}</div>
     </nav>
+    {% if feed %}{% include "partials/_feed.html" %}{% endif %}
     {% if related %}
     <section class="mh-related">
       <h2 class="mh-widget-title">More in {{ post.category.name }}</h2>
