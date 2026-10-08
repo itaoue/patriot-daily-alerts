@@ -86,6 +86,28 @@
         "alt": "Drivers: These ZIP Codes Pay the Most for Car Insurance. Is Yours on the List?",
         "headline": "Drivers: These ZIP Codes Pay the Most for Car Insurance (Is Yours on the List?)",
         "cta": "Click Here"
+      },
+      {
+        "name": "seniors-thursday-check",
+        "image": "/static/img/sponsors/seniors-thursday-check.jpg",
+        "alt": "People Born 1939-1969 Are Due A Large Surprise This Thursday",
+        "url": "https://united.seniordiscount.us/click.php?key=dw3sfzrbvbg07nzyyzdp&external_id=pda_{campaign}_{slot}_{banner}",
+        "group": "seniors-thursday",
+        "headline": "People Born 1939-1969 Are Due A Large Surprise This Thursday",
+        "advertiser": "SeniorDiscountClub",
+        "cta": "Learn More",
+        "active": true
+      },
+      {
+        "name": "seniors-thursday-100",
+        "image": "/static/img/sponsors/seniors-thursday-100.jpg",
+        "alt": "Retirees On SS Are Due A Large Surprise This Thursday",
+        "url": "https://united.seniordiscount.us/click.php?key=dw3sfzrbvbg07nzyyzdp&external_id=pda_{campaign}_{slot}_{banner}",
+        "group": "seniors-thursday",
+        "headline": "Retirees On SS Are Due A Large Surprise This Thursday",
+        "advertiser": "SeniorDiscountClub",
+        "cta": "Learn More",
+        "active": true
       }
     ]
   },
