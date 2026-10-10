@@ -129,6 +129,17 @@
         "headline": "Who Has The Cheapest Home Insurance? (Check Your ZIP Code)",
         "cta": "Check My ZIP",
         "active": true
+      },
+      {
+        "name": "ss-3950-benefits",
+        "image": "/static/img/sponsors/ss-3950-benefits.jpg",
+        "alt": "If You're Collecting Under $3,950 in SS a Month, You're Eligible for These 10 Benefits",
+        "url": "https://united.seniordiscount.us/click.php?key=dw3sfzrbvbg07nzyyzdp&external_id=pda_{campaign}_{slot}_{banner}",
+        "group": "ss-3950-benefits",
+        "headline": "If You're Collecting Under $3,950 in SS a Month, You're Eligible for These 10 Benefits",
+        "advertiser": "The Financial Bee",
+        "cta": "Learn More",
+        "active": true
       }
     ]
   },
