@@ -15,7 +15,7 @@ def migrate_columns() -> None:
     from sqlalchemy import inspect, text
 
     added = {
-        "posts": [("editor_notes", "TEXT DEFAULT ''"), ("sources", "TEXT DEFAULT ''")],
+        "posts": [("editor_notes", "TEXT DEFAULT ''"), ("sources", "TEXT DEFAULT ''"), ("seo_title", "VARCHAR(300) DEFAULT ''")],
         "offers": [("audience", "VARCHAR(16) DEFAULT 'all'"), ("placement", "VARCHAR(16) DEFAULT 'poll'"),
                    ("category", "VARCHAR(24) DEFAULT ''"), ("feed_image_url", "VARCHAR(600) DEFAULT ''")],
         "offer_clicks": [("segment", "VARCHAR(8) DEFAULT ''"), ("post_id", "INTEGER"), ("slot", "VARCHAR(8) DEFAULT ''")],

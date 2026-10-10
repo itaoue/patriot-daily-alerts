@@ -6,6 +6,7 @@
   <input type="hidden" name="csrf" value="{{ csrf }}">
   <div class="editor__main">
     <label>Headline <input name="title" required maxlength="300" value="{{ post.title if post else '' }}"></label>
+    <label>SEO title <small>(search results &amp; browser tab; blank = headline)</small> <input name="seo_title" maxlength="300" value="{{ post.seo_title if post and post.seo_title else '' }}" placeholder="Names + event people search for, under ~65 characters"></label>
     <label>Dek / excerpt <textarea name="excerpt" rows="2" maxlength="500">{{ post.excerpt if post else '' }}</textarea></label>
     <label>Body (HTML) <textarea name="body_html" rows="28" class="mono">{{ post.body_html if post else '' }}</textarea></label>
   </div>

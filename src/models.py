@@ -24,6 +24,7 @@ class Post(db.Model):
     wp_id = db.Column(db.Integer, unique=True, nullable=True, index=True)
     slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
     title = db.Column(db.String(300), nullable=False)
+    seo_title = db.Column(db.String(300), default="")  # search-result headline; empty = use title
     excerpt = db.Column(db.Text, default="")
     body_html = db.Column(db.Text, default="")
     image_url = db.Column(db.String(600), default="")
@@ -41,6 +42,10 @@ class Post(db.Model):
     @property
     def url(self) -> str:
         return f"/{self.slug}/"
+
+    @property
+    def search_title(self) -> str:
+        return self.seo_title or self.title
 
     @property
     def is_published(self) -> bool:

@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}{{ post.title }} — {{ site_name }}{% endblock %}
+{% block title %}{{ post.search_title }} — {{ site_name }}{% endblock %}
 {% block description %}{{ post.excerpt }}{% endblock %}
 {% block og_type %}article{% endblock %}
 {% block og_image %}{% if post.image_url %}<meta property="og:image" content="{{ post.image_url }}">{% endif %}
 <meta property="article:published_time" content="{{ post.published_at.isoformat() }}Z">
 <meta property="article:section" content="{{ post.category.name }}">{% endblock %}
 {% block head %}
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","headline":{{ post.title|tojson }},"datePublished":"{{ post.published_at.isoformat() }}Z","dateModified":"{{ post.updated_at.isoformat() }}Z","author":{"@type":"Person","name":{{ post.author|tojson }}},"publisher":{"@type":"Organization","name":"{{ site_name }}"},{% if post.image_url %}"image":[{{ post.image_url|tojson }}],{% endif %}"description":{{ post.excerpt|tojson }},"mainEntityOfPage":"{{ site_url }}{{ post.url }}"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsArticle","headline":{{ post.search_title|tojson }},"datePublished":"{{ post.published_at.isoformat() }}Z","dateModified":"{{ post.updated_at.isoformat() }}Z","author":{"@type":"Person","name":{{ post.author|tojson }}},"publisher":{"@type":"Organization","name":"{{ site_name }}"},{% if post.image_url %}"image":[{{ post.image_url|tojson }}],{% endif %}"description":{{ post.excerpt|tojson }},"mainEntityOfPage":"{{ site_url }}{{ post.url }}"}</script>
 {% endblock %}
 {% block body_class %}is-article{% endblock %}
 {% block content %}

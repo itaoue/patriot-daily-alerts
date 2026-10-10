@@ -164,7 +164,7 @@ def recent_posts():
     return jsonify(posts=[
         {"title": p.title, "slug": p.slug, "status": p.status, "category": p.category.slug, "author": p.author,
          "published_at": p.published_at.isoformat(), "sources": p.source_list, "editor_notes": p.editor_notes or "",
-         "url": p.url, "image_url": p.image_url, "excerpt": p.excerpt, "body_html": p.body_html}
+         "seo_title": p.seo_title or "", "url": p.url, "image_url": p.image_url, "excerpt": p.excerpt, "body_html": p.body_html}
         for p in rows
     ])
 
@@ -191,6 +191,8 @@ def publish():
     post = existing or Post(slug=slug)
     if "title" in data:
         post.title = (data["title"] or "").strip()[:300]
+    if "seo_title" in data:
+        post.seo_title = (data["seo_title"] or "").strip()[:300]
     if "body_html" in data:
         post.body_html = sanitize_html(data["body_html"] or "")
     if "excerpt" in data or not post.excerpt:

@@ -100,6 +100,7 @@ def posts():
 
 def _fill_post(post: Post, form) -> None:
     post.title = form.get("title", "").strip()[:300]
+    post.seo_title = form.get("seo_title", "").strip()[:300]
     slug = slugify(form.get("slug") or post.title)
     if Post.query.filter(Post.slug == slug, Post.id != post.id).first():
         slug = f"{slug}-{secrets.token_hex(2)}"

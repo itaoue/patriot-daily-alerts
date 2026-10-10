@@ -785,3 +785,18 @@ def test_article_you_may_like_grid_is_all_sponsored(client):
     for o in ads + [poll_only]:
         db.session.delete(o)
     db.session.commit()
+
+
+def test_seo_title_overrides_page_title_but_not_headline(client):
+    from flask import current_app
+
+    current_app.config["PUBLISH_TOKEN"] = "t0k3n"
+    h = {"Authorization": "Bearer t0k3n"}
+    body = {"title": "A Ring and Six Words", "seo_title": "Senator Engaged: What We Know", "body_html": "<p>Hi</p>",
+            "status": "published"}
+    assert client.post("/api/publish", json=body, headers=h).status_code == 201
+    html = client.get("/a-ring-and-six-words/").get_data(as_text=True)
+    assert "<title>Senator Engaged: What We Know" in html and 'og:title" content="Senator Engaged: What We Know' in html
+    assert '<h1 class="entry-title">A Ring and Six Words' in html
+    client.post("/api/publish", json={"slug": "a-ring-and-six-words", "update": True, "seo_title": ""}, headers=h)
+    assert "<title>A Ring and Six Words" in client.get("/a-ring-and-six-words/").get_data(as_text=True)

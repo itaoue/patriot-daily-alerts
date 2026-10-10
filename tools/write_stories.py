@@ -51,15 +51,16 @@ SITE = os.environ.get("SITE_URL", "https://patriotdailyalerts.com").rstrip("/")
 
 SYSTEM = """You write news stories for Patriot Daily Alerts, a conservative American news site read by patriotic, mostly older Americans who distrust the legacy media. Voice: confident, plain-spoken, concrete, a little wry; the perspective is conservative but the reporting is straight. Every story is ORIGINAL WRITING built from the facts in the research notes. Never copy or closely paraphrase another outlet's sentences; do not reproduce more than two short quotes from any one source; quote public figures only in the exact words the notes give. Never invent facts, numbers, quotes or names. If the notes flag something as unconfirmed, say so in the story. Do not write about private individuals; do not accuse anyone of a crime unless a court or law enforcement has done so. No advice, no calls to action, no "share this", no exclamation points, no cliches ("bombshell", "slams", "destroys"). Attribute reporting naturally in the body, once per outlet ("Newsmax reported", "according to the Washington Examiner") and cite the primary source when there is one (the court order, the agency statement, the post on X).
 
-Format: return the body as clean HTML using only <p>, <h2>, <blockquote>, <strong>, <em>, <a href> tags. Open with a two- or three-paragraph lede that states the news and why it matters; then two to four <h2> sections with specific headings; close with a short paragraph on what happens next. 500 to 800 words. Links in the body only to primary sources and the outlets you attribute. No "Sources" section in the body (sources are a separate field). Title style, like the site's own: specific, active, one hook, no colon-and-cliche, e.g. "Vance Walks Into the Toughest Room in His Party", "One Barcode Fails, and Ten Thousand Ballots Go Back", "Congress Is Back, and the Clock Is Already Short". Excerpt: one or two sentences that stand alone in an email.
+Format: return the body as clean HTML using only <p>, <h2>, <blockquote>, <strong>, <em>, <a href> tags. Open with a two- or three-paragraph lede that states the news and why it matters; then two to four <h2> sections with specific headings; close with a short paragraph on what happens next. 500 to 800 words. Links in the body only to primary sources and the outlets you attribute. No "Sources" section in the body (sources are a separate field). Title style, like the site's own: specific, active, one hook, no colon-and-cliche, e.g. "Vance Walks Into the Toughest Room in His Party", "One Barcode Fails, and Ten Thousand Ballots Go Back", "Congress Is Back, and the Clock Is Already Short". Excerpt: one or two sentences that stand alone in an email. SEO title: a second, plain headline for Google results, under 65 characters, that leads with the names and the event a reader would type into a search box (e.g. "Kash Patel Engaged to Alexis Wilkins" rather than "Went and Got the Law Involved"); it may add one concrete hook after a colon, but no wordplay and nothing the story does not support.
 
 Sections: politics = Washington, campaigns, Congress, the White House, courts and elections; culture = schools, faith, media, entertainment, sports, speech and social issues; economy = prices, jobs, energy, taxes, markets, the Fed, trade; world = foreign affairs, wars, allies and adversaries; border = immigration, the border, ICE, cartels; crime = murders, trials, verdicts, police, manhunts and the cases the country is watching (sports, celebrities and royals go in culture). Pick the section by the story's subject, not by who is speaking (a Treasury secretary talking about oil prices is economy; a mayor and a 9/11 ceremony is politics; a police charity dropping a singer is culture)."""
 
 SCHEMA = {
     "type": "object", "additionalProperties": False,
-    "required": ["title", "slug", "excerpt", "category", "body_html", "sources", "person", "person_query", "image_scene"],
+    "required": ["title", "seo_title", "slug", "excerpt", "category", "body_html", "sources", "person", "person_query", "image_scene"],
     "properties": {
         "title": {"type": "string"},
+        "seo_title": {"type": "string", "description": "search-result headline: names + event first, under 65 characters"},
         "slug": {"type": "string", "description": "lowercase, hyphenated, 4 to 8 words, no dates"},
         "excerpt": {"type": "string"},
         "category": {"type": "string", "enum": CATEGORIES},
@@ -339,7 +340,7 @@ def attach_image(art, slug, date, no_image, used=None):
 
 def publish(art, status, notes, image_url, token, site_recent_slugs):
     slug = re.sub(r"[^a-z0-9-]", "", art["slug"].lower().replace(" ", "-")).strip("-")[:80] or "story"
-    payload = {"title": art["title"], "slug": slug, "excerpt": art["excerpt"], "category": art["category"], "body_html": art["body_html"],
+    payload = {"title": art["title"], "seo_title": art.get("seo_title", ""), "slug": slug, "excerpt": art["excerpt"], "category": art["category"], "body_html": art["body_html"],
                "sources": art["sources"], "image_url": image_url, "status": status, "editor_notes": notes, "author": os.environ.get("STORY_AUTHOR", "Joseph Sosa")}
     r = requests.post(f"{SITE}/api/publish", json=payload, headers={"Authorization": f"Bearer {token}"}, timeout=60)
     if r.status_code == 409:
