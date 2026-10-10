@@ -409,6 +409,21 @@
       "audience": "all",
       "weight": 5,
       "active": true
+    },
+    {
+      "name": "Senior Discount - under $3,950 SS 10 benefits (grocery)",
+      "category": "benefits",
+      "headline": "If You're Collecting Under $3,950 in SS a Month, You're Eligible for These 10 Benefits",
+      "blurb": "",
+      "cta": "Learn More",
+      "url": "https://united.seniordiscount.us/click.php?key=dw3sfzrbvbg07nzyyzdp&external_id={clickid}",
+      "image_url": "/static/img/sponsors/ss-3950-benefits-grocery.jpg",
+      "feed_image_url": "/static/img/sponsors/feed-ss-3950-benefits-grocery.jpg",
+      "label": "Senior Discount",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 5,
+      "active": true
     }
   ]
 }
