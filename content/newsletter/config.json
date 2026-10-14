@@ -79,11 +79,14 @@
       },
       {
         "name": "gifts-fidget-28",
-        "image": "/static/img/sponsors/gifts-fidget-28.jpg",
+        "image": "/static/img/sponsors/gifts-fidget-28-photo.jpg",
         "alt": "Best Christmas Gift: Here Are 28+ Of The Coolest Gifts For 2026",
         "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id=pda_{campaign}_{slot}_{banner}",
         "group": "gifts",
-        "active": true
+        "active": true,
+        "headline": "Best Christmas Gift: Here Are 28+ Of The Coolest Gifts For 2026",
+        "advertiser": "Pesmory",
+        "cta": "Learn More"
       },
       {
         "name": "auto-insurance-zip-map",
