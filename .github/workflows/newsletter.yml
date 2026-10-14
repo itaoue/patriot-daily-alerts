@@ -49,7 +49,7 @@ jobs:
       BIGMAILER_BRAND_ID: ${{ secrets.BIGMAILER_BRAND_ID }}
       BIGMAILER_LIST_ID: ${{ secrets.BIGMAILER_LIST_ID }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # for the daily poll question
-      EDITOR_MODEL: ${{ vars.EDITOR_MODEL || 'claude-sonnet-5' }}
+      EDITOR_MODEL: ${{ vars.EDITOR_MODEL || 'claude-sonnet-5-5' }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6

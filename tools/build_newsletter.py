@@ -183,7 +183,7 @@ def poll_question(leads, campaign):
                 f"Headline: {lead['title']}\nSummary: {lead.get('excerpt', '')}\nStory: {body}"
             )
             msg = client.messages.create(
-                model=os.environ.get("EDITOR_MODEL", "claude-sonnet-5"), max_tokens=400,
+                model=os.environ.get("EDITOR_MODEL", "claude-sonnet-5-5"), max_tokens=400,
                 output_config={"effort": "low", "format": {"type": "json_schema", "schema": POLL_SCHEMA}},
                 messages=[{"role": "user", "content": prompt}])
             if msg.stop_reason == "end_turn":
@@ -208,7 +208,7 @@ CHECK_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["s
 def fact_check_lines(client, subject, teaser, stories_text):
     """Second pass: every word of the subject/teaser must be supported by the stories; overstated verbs get rewritten."""
     msg = client.messages.create(
-        model=os.environ.get("EDITOR_MODEL", "claude-sonnet-5"), max_tokens=400,
+        model=os.environ.get("EDITOR_MODEL", "claude-sonnet-5-5"), max_tokens=400,
         output_config={"effort": "low", "format": {"type": "json_schema", "schema": CHECK_SCHEMA}},
         messages=[{"role": "user", "content": (
             "You are a fact-checker for email subject lines. For each line, decide whether EVERY claim and verb is supported by the story text "
@@ -267,7 +267,7 @@ def email_subject(leads, campaign):
         messages = [{"role": "user", "content": content}]
         for attempt in range(2):
             msg = client.messages.create(
-                model=os.environ.get("EDITOR_MODEL", "claude-sonnet-5"), max_tokens=300,
+                model=os.environ.get("EDITOR_MODEL", "claude-sonnet-5-5"), max_tokens=300,
                 output_config={"effort": "low", "format": {"type": "json_schema", "schema": SUBJECT_SCHEMA}},
                 system=SUBJECT_RULES, messages=messages)
             if msg.stop_reason != "end_turn":

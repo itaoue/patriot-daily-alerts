@@ -17,7 +17,7 @@ is POSTed to /api/publish. Picks go to content/radar/used.json so a story is nev
 
 Environment: ANTHROPIC_API_KEY, XAI_API_KEY, PUBLISH_TOKEN, SITE_URL (default https://patriotdailyalerts.com),
 STORY_AUTHOR (byline, default "Joseph Sosa"), STORY_EFFORT (default medium), and optional model overrides
-STORY_MODEL / RESEARCH_MODEL / EDITOR_MODEL (default claude-opus-5 for all three). Every call prints its token
+STORY_MODEL (default claude-opus-5-5) / RESEARCH_MODEL / EDITOR_MODEL (default claude-sonnet-5-5). Every call prints its token
 usage and an estimated cost; the run ends with a total.
 """
 import argparse
@@ -38,11 +38,12 @@ USED = RADAR / "used.json"
 UPLOADS = ROOT / "src" / "static" / "uploads"
 sys.path.insert(0, str(ROOT / "tools"))
 
-MODEL = os.environ.get("STORY_MODEL", "claude-opus-5")            # writing
-RESEARCH_MODEL = os.environ.get("RESEARCH_MODEL", MODEL)              # web research (set claude-sonnet-5 to cut cost further)
-EDITOR_MODEL = os.environ.get("EDITOR_MODEL", MODEL)                  # editor + revision passes
+MODEL = os.environ.get("STORY_MODEL", "claude-opus-5-5")          # writing
+RESEARCH_MODEL = os.environ.get("RESEARCH_MODEL", "claude-sonnet-5-5")   # web research: the most input-heavy step, so the cheaper model
+EDITOR_MODEL = os.environ.get("EDITOR_MODEL", "claude-sonnet-5-5")       # editor + revision passes
 EFFORT = os.environ.get("STORY_EFFORT", "medium")                     # low | medium | high — medium matches high on research work at ~75% cost
 PRICES = {  # $ per million tokens: input, output, cache read, cache write
+    "claude-opus-5-5": (4.0, 20.0, 0.2, 5.0), "claude-sonnet-5-5": (2.0, 10.0, 0.2, 2.5),
     "claude-opus-5": (5.0, 25.0, 0.5, 6.25), "claude-sonnet-5": (2.0, 10.0, 0.2, 2.5), "claude-haiku-4-5": (1.0, 5.0, 0.1, 1.25),
 }
 USAGE = {"calls": 0, "cost": 0.0, "story": 0.0}
@@ -170,7 +171,7 @@ def record_usage(msg, model):
     inp, out = u.input_tokens, u.output_tokens
     cr = getattr(u, "cache_read_input_tokens", 0) or 0
     cw = getattr(u, "cache_creation_input_tokens", 0) or 0
-    pi, po, pr, pw = PRICES.get(model, PRICES["claude-opus-5"])
+    pi, po, pr, pw = PRICES.get(model, PRICES["claude-opus-5-5"])
     searches = 0
     st = getattr(u, "server_tool_use", None)
     if st is not None:

@@ -105,7 +105,7 @@ Railway 的文件系统是临时的，所以后台的封面图字段采用 URL �
 2. `tools/write_stories.py` 对每个选题：Claude 用联网搜索和网页抓取读 2 到 3 家报道和一手来源 → 写 500 到 800 词原创稿（保守派视角、正文只用短引语并注明出处）→ 第二次 Claude 调用当编辑，逐条核对事实、引语和法律风险 → 配图（公众人物用 Wikimedia 授权照片，否则用 xAI 生成的无人脸新闻图，存入 `src/static/uploads/` 随代码提交）→ `POST /api/publish` 进入后台草稿，编辑意见显示在文章编辑页右侧。
 3. 只有 AI 编辑判定为 reject 的稿子会留在后台 “Drafts awaiting review” 里；其余直接上线。想改回人工审核，把工作流里的 `STATUS=published` 改成 `draft`。
 
-**成本控制**：每次调用都会在运行日志里打印 token 用量和估算费用，运行结束给出总额。默认 `STORY_EFFORT=medium`；调研每篇最多 3 次搜索加 3 次抓取、每页 6k token 并启用提示缓存。可在仓库 Variables 里设 `RESEARCH_MODEL` / `EDITOR_MODEL`（如 `claude-sonnet-5`）进一步降本，写稿仍用 `STORY_MODEL`。
+**成本控制**：每次调用都会在运行日志里打印 token 用量和估算费用，运行结束给出总额。默认 `STORY_EFFORT=medium`；调研每篇最多 3 次搜索加 3 次抓取、每页 6k token 并启用提示缓存。默认写稿用 `claude-opus-5-5`（`STORY_MODEL`），调研和编辑用 `claude-sonnet-5-5`（`RESEARCH_MODEL` / `EDITOR_MODEL`，新闻邮件也读 `EDITOR_MODEL`）；都可在仓库 Variables 里覆盖。
 
 GitHub 仓库需要配置 Secrets：`ANTHROPIC_API_KEY`、`XAI_API_KEY`、`PUBLISH_TOKEN`（与 Railway 变量 `PUBLISH_TOKEN` 相同的长随机串）。也可以在 Actions 页面手动触发 `Content pipeline`，指定篇数。文章署名默认 Joseph Sosa（旧站沿用的署名），要换的话在仓库 Settings → Variables 里加 `STORY_AUTHOR`。
 
