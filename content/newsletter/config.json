@@ -190,6 +190,14 @@
         "url": "https://united.seniordiscount.us/click.php?key=ehljss5dkl7q3urfscjl&external_id=pda_{campaign}_{slot}_{banner}",
         "group": "life-hacks",
         "active": true
+      },
+      {
+        "name": "electric-adapter-mistake",
+        "image": "/static/img/sponsors/electric-adapter-mistake.jpg",
+        "alt": "Electricians: This Mistake Will Double Your Electricity Bill",
+        "url": "https://www.g8mv2trk.com/2P9J9R/2HFP6ZP/",
+        "group": "electric",
+        "active": true
       }
     ]
   },
