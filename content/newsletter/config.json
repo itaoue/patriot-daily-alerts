@@ -206,6 +206,14 @@
         "url": "https://united.seniordiscount.us/click.php?key=ehljss5dkl7q3urfscjl&external_id=pda_{campaign}_{slot}_{banner}",
         "group": "life-hacks",
         "active": true
+      },
+      {
+        "name": "skin-crepey-vitamin",
+        "image": "/static/img/sponsors/skin-crepey-vitamin.jpg",
+        "alt": "Dermatologists: The 1 Vitamin You Need If You Have Wrinkles",
+        "url": "https://www.g8mv2trk.com/2P9J9R/2MDRTT9/",
+        "group": "skin",
+        "active": true
       }
     ]
   },

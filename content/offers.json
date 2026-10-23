@@ -482,6 +482,20 @@
       "audience": "all",
       "weight": 10,
       "active": true
+    },
+    {
+      "name": "EF beauty - crepey skin vitamin",
+      "category": "beauty",
+      "headline": "Dermatologists: The 1 Vitamin You Need If You Have Wrinkles",
+      "blurb": "Crepey skin? Most people use lotions. K-Beauty does this instead. Experts call it the \"youth lift in a jar\".",
+      "cta": "Beautiful Skin Again, Try It",
+      "url": "https://www.g8mv2trk.com/2P9J9R/2MDRTT9/?sub1=pda-web&sub2={offer}&sub3={page}&sub4={click}&sub5={segment}",
+      "image_url": "/static/img/sponsors/offer-skin-crepey-vitamin.jpg",
+      "label": "Sponsored",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 5,
+      "active": true
     }
   ]
 }
