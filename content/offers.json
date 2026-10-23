@@ -496,6 +496,20 @@
       "audience": "all",
       "weight": 5,
       "active": true
+    },
+    {
+      "name": "EF health - blood sugar oatmeal",
+      "category": "health",
+      "headline": "Endocrinologists Stunned: Forget Metformin, This Fixes Your Diabetes & Blood Sugar",
+      "blurb": "Japan's top doctors say blood sugar isn't age: just stop eating this common food. Lower glucose once and for all.",
+      "cta": "Watch the free video",
+      "url": "https://www.g8mv2trk.com/2P9J9R/2G5L7SX/?sub1=pda-web&sub2={offer}&sub3={page}&sub4={click}&sub5={segment}",
+      "image_url": "/static/img/sponsors/offer-sugar-oatmeal.jpg",
+      "label": "Sponsored",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 5,
+      "active": true
     }
   ]
 }
