@@ -440,6 +440,48 @@
       "audience": "all",
       "weight": 10,
       "active": true
+    },
+    {
+      "name": "Life hacks - tin foil dishwasher",
+      "category": "hacks",
+      "headline": "Put Tin Foil in the Dishwasher? Here's Why Seniors Do It",
+      "blurb": "Seniors toss a foil ball in with the dishes before bed. What it does by morning may surprise you.",
+      "cta": "See What Doctors Won't Say",
+      "url": "https://united.seniordiscount.us/click.php?key=ehljss5dkl7q3urfscjl&external_id={clickid}",
+      "image_url": "/static/img/sponsors/hack-tinfoil-dishwasher.jpg",
+      "label": "Sponsored",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 10,
+      "active": true
+    },
+    {
+      "name": "Life hacks - salt and Vaseline",
+      "category": "hacks",
+      "headline": "Mix Salt With Vaseline and Just Watch",
+      "blurb": "One of 20+ tested life hacks for home, kitchen, and self-care.",
+      "cta": "Health Tips Big Pharma Hates",
+      "url": "https://united.seniordiscount.us/click.php?key=ehljss5dkl7q3urfscjl&external_id={clickid}",
+      "image_url": "/static/img/sponsors/hack-salt-vaseline.jpg",
+      "label": "Sponsored",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 10,
+      "active": true
+    },
+    {
+      "name": "Life hacks - eggs in the fridge",
+      "category": "hacks",
+      "headline": "Never Put Eggs in a Fridge",
+      "blurb": "Never put eggs in the fridge. Here's what happens.",
+      "cta": "Learn More",
+      "url": "https://united.seniordiscount.us/click.php?key=ehljss5dkl7q3urfscjl&external_id={clickid}",
+      "image_url": "/static/img/sponsors/hack-eggs-fridge.jpg",
+      "label": "Sponsored",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 10,
+      "active": true
     }
   ]
 }
