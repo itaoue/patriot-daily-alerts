@@ -183,51 +183,63 @@
       },
       {
         "name": "hacks-tinfoil-dishwasher",
-        "image": "/static/img/sponsors/hacks-tinfoil-dishwasher.jpg",
+        "image": "/static/img/sponsors/photo-hacks-tinfoil-dishwasher.jpg",
         "alt": "Put Tin Foil in the Dishwasher? Here's Why Seniors Do It",
         "url": "https://united.seniordiscount.us/click.php?key=ehljss5dkl7q3urfscjl&external_id=pda_{campaign}_{slot}_{banner}",
         "group": "life-hacks",
-        "active": true
+        "active": true,
+        "headline": "Put Tin Foil in the Dishwasher? Here's Why Seniors Do It",
+        "cta": "Learn More"
       },
       {
         "name": "hacks-salt-vaseline",
-        "image": "/static/img/sponsors/hacks-salt-vaseline.jpg",
+        "image": "/static/img/sponsors/photo-hacks-salt-vaseline.jpg",
         "alt": "Mix Salt With Vaseline and Just Watch",
         "url": "https://united.seniordiscount.us/click.php?key=ehljss5dkl7q3urfscjl&external_id=pda_{campaign}_{slot}_{banner}",
         "group": "life-hacks",
-        "active": true
+        "active": true,
+        "headline": "Mix Salt With Vaseline and Just Watch",
+        "cta": "Learn More"
       },
       {
         "name": "electric-adapter-mistake",
-        "image": "/static/img/sponsors/electric-adapter-mistake.jpg",
+        "image": "/static/img/sponsors/photo-electric-adapter-mistake.jpg",
         "alt": "Electricians: This Mistake Will Double Your Electricity Bill",
         "url": "https://www.g8mv2trk.com/2P9J9R/2HFP6ZP/",
         "group": "electric",
-        "active": true
+        "active": true,
+        "headline": "Electricians: This Mistake Will Double Your Electricity Bill",
+        "cta": "Continue Reading"
       },
       {
         "name": "hacks-eggs-fridge",
-        "image": "/static/img/sponsors/hacks-eggs-fridge.jpg",
-        "alt": "Never Put Eggs in a Fridge",
+        "image": "/static/img/sponsors/photo-hacks-eggs-fridge.jpg",
+        "alt": "Never Put Eggs in a Fridge. Here's What Happens",
         "url": "https://united.seniordiscount.us/click.php?key=ehljss5dkl7q3urfscjl&external_id=pda_{campaign}_{slot}_{banner}",
         "group": "life-hacks",
-        "active": true
+        "active": true,
+        "headline": "Never Put Eggs in a Fridge. Here's What Happens",
+        "cta": "Learn More"
       },
       {
         "name": "skin-crepey-vitamin",
-        "image": "/static/img/sponsors/skin-crepey-vitamin.jpg",
+        "image": "/static/img/sponsors/photo-skin-crepey-vitamin.jpg",
         "alt": "Dermatologists: The 1 Vitamin You Need If You Have Wrinkles",
         "url": "https://www.g8mv2trk.com/2P9J9R/2MDRTT9/",
         "group": "skin",
-        "active": true
+        "active": true,
+        "headline": "Dermatologists: The 1 Vitamin You Need If You Have Wrinkles",
+        "cta": "Try It"
       },
       {
         "name": "sugar-oatmeal",
-        "image": "/static/img/sponsors/sugar-oatmeal.jpg",
+        "image": "/static/img/sponsors/photo-sugar-oatmeal.jpg",
         "alt": "Endocrinologists Stunned: Forget Metformin, This Fixes Your Blood Sugar",
         "url": "https://www.g8mv2trk.com/2P9J9R/2G5L7SX/",
         "group": "sugar",
-        "active": true
+        "active": true,
+        "headline": "Endocrinologists Stunned: Forget Metformin, This Fixes Your Blood Sugar",
+        "cta": "Watch the Free Video"
       }
     ]
   },
