@@ -12,6 +12,12 @@
       "top",
       "mid"
     ],
+    "overrides": {
+      "2026-10-24": {
+        "top": "gifts-fidget-28",
+        "mid": "gifts-rotoshovel"
+      }
+    },
     "banners": [
       {
         "name": "electric-switch-a",

@@ -109,15 +109,19 @@ def pick_sponsors(date_et):
         return {}
     n = date_et.toordinal()
     order = banners[n % len(banners):] + banners[: n % len(banners)]
-    picked = {}
+    # "overrides": {"YYYY-MM-DD": {"mid": "<banner name>"}} pins a creative to a slot for one issue
+    pinned = (cfg.get("overrides") or {}).get(date_et.strftime("%Y-%m-%d"), {})
+    picked = {k: b for k, name in pinned.items() for b in banners if b["name"] == name}
     for slot in cfg.get("slots", ["top", "mid"]):
+        if slot in picked:
+            continue
         used = [b.get("group") or b.get("name") for b in picked.values()]
         # skip creatives that look like one already in this issue (same "group"); fall back to any unused one
         nxt = next((b for b in order if (b.get("group") or b.get("name")) not in used), None) or \
             next((b for b in order if b not in picked.values()), None)
         if nxt:
             picked[slot] = nxt
-    return picked
+    return {k: picked[k] for k in cfg.get("slots", ["top", "mid"]) if k in picked}
 
 
 def sponsor_url(b, slot, campaign):
