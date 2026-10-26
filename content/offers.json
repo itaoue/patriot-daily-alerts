@@ -642,6 +642,36 @@
       "weight": 10,
       "active": true,
       "feed_image_url": "/static/img/sponsors/feed-gadget-brass-fidget.jpg"
+    },
+    {
+      "name": "Gadgets listicle - orrery-tool",
+      "category": "gadgets",
+      "headline": "28+ Cool Gadgets That Make Great Christmas Gifts",
+      "blurb": "",
+      "cta": "Shop Now",
+      "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id={subid}",
+      "image_url": "/static/img/sponsors/gadget-orrery-tool.jpg",
+      "label": "Gadgets Laboratory",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 10,
+      "active": true,
+      "feed_image_url": "/static/img/sponsors/feed-gadget-orrery-tool.jpg"
+    },
+    {
+      "name": "Gadgets listicle - gnome-rug",
+      "category": "gadgets",
+      "headline": "Best Christmas Gift: Here Are 28+ Of The Coolest Gifts For 2026",
+      "blurb": "",
+      "cta": "Shop Now",
+      "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id={subid}",
+      "image_url": "/static/img/sponsors/gadget-gnome-rug.jpg",
+      "label": "Gadgets Laboratory",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 10,
+      "active": true,
+      "feed_image_url": "/static/img/sponsors/feed-gadget-gnome-rug.jpg"
     }
   ]
 }
