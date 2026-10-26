@@ -553,6 +553,20 @@
       "audience": "all",
       "weight": 10,
       "active": true
+    },
+    {
+      "name": "Life hacks - toilet bowl pour",
+      "category": "hacks",
+      "headline": "Pour This Into Your Toilet Bowl, See What Happens",
+      "blurb": "",
+      "cta": "Read More",
+      "url": "https://united.seniordiscount.us/click.php?key=ehljss5dkl7q3urfscjl&external_id={clickid}",
+      "image_url": "/static/img/sponsors/hack-toilet-pour.jpg",
+      "label": "Sponsored",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 10,
+      "active": true
     }
   ]
 }
