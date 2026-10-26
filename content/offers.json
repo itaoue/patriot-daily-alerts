@@ -597,6 +597,51 @@
       "weight": 10,
       "active": true,
       "feed_image_url": "/static/img/sponsors/feed-gadget-rug.jpg"
+    },
+    {
+      "name": "Gadgets listicle - gyro-orb",
+      "category": "gadgets",
+      "headline": "Best Christmas Gift: Here Are 28+ Of The Coolest Gifts For 2026",
+      "blurb": "",
+      "cta": "Shop Now",
+      "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id={subid}",
+      "image_url": "/static/img/sponsors/gadget-gyro-orb.jpg",
+      "label": "Gadgets Laboratory",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 10,
+      "active": true,
+      "feed_image_url": "/static/img/sponsors/feed-gadget-gyro-orb.jpg"
+    },
+    {
+      "name": "Gadgets listicle - flashlight-duo",
+      "category": "gadgets",
+      "headline": "Best Christmas Gift: Here Are 23+ Of The Coolest Gifts For 2026",
+      "blurb": "",
+      "cta": "Shop Now",
+      "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id={subid}",
+      "image_url": "/static/img/sponsors/gadget-flashlight-duo.jpg",
+      "label": "Gadgets Laboratory",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 10,
+      "active": true,
+      "feed_image_url": "/static/img/sponsors/feed-gadget-flashlight-duo.jpg"
+    },
+    {
+      "name": "Gadgets listicle - brass-fidget",
+      "category": "gadgets",
+      "headline": "28+ Cool Gadgets That Make Great Christmas Gifts",
+      "blurb": "",
+      "cta": "Shop Now",
+      "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id={subid}",
+      "image_url": "/static/img/sponsors/gadget-brass-fidget.jpg",
+      "label": "Gadgets Laboratory",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 10,
+      "active": true,
+      "feed_image_url": "/static/img/sponsors/feed-gadget-brass-fidget.jpg"
     }
   ]
 }
