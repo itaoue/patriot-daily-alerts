@@ -510,6 +510,21 @@
       "audience": "all",
       "weight": 5,
       "active": true
+    },
+    {
+      "name": "Gadgets listicle - bakebot",
+      "category": "gadgets",
+      "headline": "Best Christmas Gift: Here Are 23+ Of The Coolest Gifts For 2026",
+      "blurb": "",
+      "cta": "Shop Now",
+      "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id={subid}",
+      "image_url": "/static/img/sponsors/gadget-bakebot.jpg",
+      "label": "Gadgets Laboratory",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 10,
+      "active": true,
+      "feed_image_url": "/static/img/sponsors/feed-gadget-bakebot.jpg"
     }
   ]
 }
