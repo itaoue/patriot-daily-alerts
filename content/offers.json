@@ -525,6 +525,20 @@
       "weight": 10,
       "active": true,
       "feed_image_url": "/static/img/sponsors/feed-gadget-bakebot.jpg"
+    },
+    {
+      "name": "Life hacks - toilet roll under seat",
+      "category": "hacks",
+      "headline": "Put Toilet Roll Under Seat",
+      "blurb": "Weirdly useful reason to place a toilet paper roll under your toilet seat.",
+      "cta": "See Why",
+      "url": "https://united.seniordiscount.us/click.php?key=ehljss5dkl7q3urfscjl&external_id={clickid}",
+      "image_url": "/static/img/sponsors/hack-toilet-roll.jpg",
+      "label": "Sponsored",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 10,
+      "active": true
     }
   ]
 }
