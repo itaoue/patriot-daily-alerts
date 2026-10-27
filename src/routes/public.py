@@ -425,7 +425,7 @@ def welcome():
 
 SPONSORED_PAGES = {
     "brick-advent-calendar": {"template": "sponsored/brick_advent.html", "images": "brick-advent", "tag": "lp-brick-advent",
-                              "offer": "https://www.g8mv2trk.com/2P9J9R/2PQ3DFS/"},
+                              "offer": "https://www.g8mv2trk.com/2P9J9R/2Q2DNTG/"},
 }
 SPONSORED_SOURCES = ("nl", "feed", "direct")  # where the reader came from: newsletter native ad, site grid, anything else
 

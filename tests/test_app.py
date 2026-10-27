@@ -624,7 +624,7 @@ def test_landing_page_variants_and_utm_passthrough(client):
 def test_sponsored_page_cta_carries_source(client):
     r = client.get("/sponsored/brick-advent-calendar/?src=nl&c=2026-10-28-daily&s=top")
     assert r.status_code == 200 and r.headers["X-Robots-Tag"].startswith("noindex")
-    assert b"g8mv2trk.com/2P9J9R/2PQ3DFS/?sub1=pda-web&amp;sub2=lp-brick-advent&amp;sub3=nl&amp;sub4=2026-10-28-daily&amp;sub5=top" in r.data
+    assert b"g8mv2trk.com/2P9J9R/2Q2DNTG/?sub1=pda-web&amp;sub2=lp-brick-advent&amp;sub3=nl&amp;sub4=2026-10-28-daily&amp;sub5=top" in r.data
     assert b"Sponsored content" in r.data and b"mh-main-nav" not in r.data
     r = client.get("/sponsored/brick-advent-calendar/?src=<x>&c=../etc")
     assert b"sub3=direct&amp;sub4=etc&amp;sub5=" in r.data  # unknown source and odd characters are dropped
