@@ -1,0 +1,117 @@
+{% extends "landing_base.html" %}
+{# Sponsored product page (advertorial). Everything factual here comes from the seller's product page;
+   no invented people, quotes or stock counts. The CTA goes straight to the Everflow offer link. #}
+{% block title %}A Christmas Advent Calendar Your Family Builds, One Ornament Every Evening — {{ site_name }}{% endblock %}
+{% block description %}24 mini brick Christmas ornaments behind 24 numbered doors. Ten minutes an evening, and by Christmas Eve the tree is covered in pieces your family built.{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block canonical %}/sponsored/brick-advent-calendar/{% endblock %}
+{% block body_class %}lp-body--sp{% endblock %}
+{% block head %}
+<style>
+.sp{max-width:720px;margin:0 auto;padding:0 20px 40px;font-size:17px;line-height:1.65;color:#222}
+.sp__label{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#777;padding:14px 0 6px;border-bottom:1px solid var(--line)}
+.sp__label b{font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#777}
+.sp h1{font-size:clamp(27px,5vw,38px);line-height:1.15;letter-spacing:-.01em;font-weight:800;margin:18px 0 12px}
+.sp__sub{font-size:19px;line-height:1.5;color:#444;margin:0 0 18px}
+.sp__hero{border-radius:10px;overflow:hidden;margin:0 0 22px}.sp__hero img{width:100%;display:block}
+.sp h2{font-size:clamp(22px,3.6vw,27px);line-height:1.25;margin:36px 0 12px;font-weight:800}
+.sp p{margin:0 0 16px}
+.sp__fig{margin:22px 0;border-radius:10px;overflow:hidden}.sp__fig img{width:100%;display:block}
+.sp__fig figcaption{font-size:13px;color:#777;padding:8px 2px 0}
+.sp__offer{background:#fff8e6;border:1px solid #f0d9a0;border-radius:10px;padding:20px 22px;margin:26px 0}
+.sp__offer h3{font-size:19px;margin:0 0 6px}
+.sp__price{font-size:30px;font-weight:800;color:#b3202e}.sp__price s{font-size:18px;color:#888;font-weight:600;margin-left:8px}
+.sp__offer ul{margin:10px 0 0;padding:0;list-style:none;font-size:15px;color:#444}.sp__offer li{padding:4px 0 4px 26px;position:relative}
+.sp__offer li::before{content:"✓";position:absolute;left:4px;color:#1b8a3a;font-weight:800}
+.sp__cta{display:block;background:var(--red);color:#fff!important;text-align:center;font-weight:800;font-size:19px;padding:17px 20px;border-radius:8px;margin:18px 0 8px;box-shadow:0 6px 18px rgba(230,73,70,.3)}
+.sp__cta:hover{background:var(--red-2)}
+.sp__fine{font-size:13px;color:#777;text-align:center;margin:0}
+.sp__steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0 6px}
+.sp__step{background:var(--bg);border-radius:8px;padding:16px 14px;font-size:15px;line-height:1.45}
+.sp__step b{display:block;font-size:26px;color:var(--blue);margin-bottom:6px}
+.sp__grid{columns:2;column-gap:24px;margin:12px 0 0;padding:0 0 0 20px;font-size:15.5px}.sp__grid li{break-inside:avoid;padding:2px 0}
+.sp__bullets{margin:12px 0 0;padding:0;list-style:none}.sp__bullets li{position:relative;padding:9px 0 9px 32px;border-bottom:1px solid var(--line)}
+.sp__bullets li::before{content:"";position:absolute;left:0;top:13px;width:20px;height:20px;border-radius:50%;background:var(--red)}
+.sp__bullets li::after{content:"";position:absolute;left:7px;top:16px;width:5px;height:10px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.sp__faq dt{font-weight:800;margin:16px 0 4px}.sp__faq dd{margin:0;color:#444}
+.sp__disclosure{font-size:13px;color:#777;line-height:1.55;border-top:1px solid var(--line);padding-top:18px;margin-top:36px}
+.lp-body--sp .lp-sticky{display:block}.lp-body--sp .lp-foot{padding-bottom:84px}
+@media (min-width:720px){.lp-body--sp .lp-sticky{display:none}.lp-body--sp .lp-foot{padding-bottom:22px}}
+@media (max-width:560px){.sp__steps{grid-template-columns:1fr}.sp__grid{columns:1}}
+</style>
+{% endblock %}
+
+{% block content %}
+<article class="sp" id="top">
+  <div class="sp__label"><b>Sponsored</b><span>Gift idea · Holiday 2026</span></div>
+
+  <h1>This Christmas, Build an Ornament Every Evening Instead of Eating a Chocolate</h1>
+  <p class="sp__sub">The Mini Christmas Brick Ornament Advent Calendar puts 24 tiny build-it-yourself ornaments behind 24 numbered doors. Ten minutes a night at the kitchen table, and by Christmas Eve the tree is covered in pieces your family made with its own hands.</p>
+
+  <div class="sp__hero"><img src="{{ img }}hero.jpg" alt="The Mini Christmas Brick Ornament Advent Calendar box under a lit Christmas tree, with finished brick ornaments hanging from the branches" width="1200" height="675"></div>
+
+  <p>Most Advent calendars are gone the moment they are opened. The chocolate is eaten before breakfast; the little plastic toys are in the bin by New Year. This one works the other way round. Every evening in December you open one door, tip out a small bag of bricks, and build that day's ornament together: a snowman, a reindeer, a gingerbread house, a cardinal. Each one has a built-in hook, so it goes straight onto the tree.</p>
+  <p>By the 24th there are twenty-four of them. And next year the box comes down from the attic and they all go back up, along with the memory of who built which one.</p>
+
+  <div class="sp__offer">
+    <h3>Mini Christmas Brick Ornament Advent Calendar 2026</h3>
+    <div class="sp__price">$69.99 <s>$139.99</s></div>
+    <ul>
+      <li>24 different mini brick ornaments, each with its own hook</li>
+      <li>24 numbered doors, one build per evening, about 10 minutes each</li>
+      <li>Delivered in 3 to 5 working days anywhere in the US</li>
+      <li>30-day money-back guarantee from the seller</li>
+    </ul>
+    <a class="sp__cta" href="{{ cta_url }}" rel="nofollow sponsored noopener" target="_blank">Check availability and today's price »</a>
+    <p class="sp__fine">Price and discount shown are the seller's at the time of writing and may change.</p>
+  </div>
+
+  <h2>How it works</h2>
+  <div class="sp__steps">
+    <div class="sp__step"><b>1</b>Open today's numbered door. Inside is a small bag of bricks and a picture of the ornament.</div>
+    <div class="sp__step"><b>2</b>Build it together. Each ornament is sized for a child of 8 or older to finish in about ten minutes.</div>
+    <div class="sp__step"><b>3</b>Hang it on the tree by its built-in hook, and let tomorrow's door wait.</div>
+  </div>
+  <figure class="sp__fig"><img src="{{ img }}steps.jpg" alt="Three steps: open today's door, build the ornament in ten minutes, hang it on the tree" loading="lazy"></figure>
+
+  <h2>What you build: all 24 ornaments</h2>
+  <p>Every ornament is different, and each comes with a gold hook behind its own numbered door.</p>
+  <ul class="sp__grid">
+    <li>Santa</li><li>Reindeer</li><li>Snowman</li><li>Christmas tree</li><li>Gingerbread man</li><li>Christmas elf</li>
+    <li>Gift box</li><li>Nutcracker</li><li>Penguin</li><li>Gingerbread house</li><li>Christmas bell</li><li>Christmas train</li>
+    <li>Santa's sleigh</li><li>Carousel</li><li>Christmas owl</li><li>Highland cow</li><li>Cardinal</li><li>Snowy cottage</li>
+    <li>Christmas door</li><li>Stocking</li><li>Wreath</li><li>Teddy bear</li><li>Christmas-tree truck</li><li>Ferris wheel</li>
+  </ul>
+  <figure class="sp__fig"><img src="{{ img }}ornaments.jpg" alt="The calendar box surrounded by all 24 finished brick ornaments" loading="lazy"><figcaption>The full set of 24, built.</figcaption></figure>
+
+  <h2>Why it makes a good gift for grandparents and grandkids</h2>
+  <ul class="sp__bullets">
+    <li><strong>Nothing to throw away.</strong> The ornaments are the point. They stay on the tree, and they come back out every December.</li>
+    <li><strong>Ten minutes is the right length.</strong> Long enough to sit down together, short enough that nobody gets bored. It works just as well over a video call with a grandchild in another state.</li>
+    <li><strong>Proper hooks, not glued loops.</strong> Each ornament has a hook built into the bricks, so it hangs the way a real bauble does.</li>
+    <li><strong>Ages 8 and up.</strong> The pieces are small, so it is a project for older children and adults, not toddlers.</li>
+    <li><strong>One per household.</strong> If you are buying for more than one family, each one needs its own calendar so everyone gets to build.</li>
+  </ul>
+  <figure class="sp__fig"><img src="{{ img }}family.jpg" alt="A father and son building a brick ornament at the kitchen table" loading="lazy"></figure>
+
+  <a class="sp__cta" href="{{ cta_url }}" rel="nofollow sponsored noopener" target="_blank">See the calendar and check the price »</a>
+  <p class="sp__fine">Advent starts December 1. Order early enough for delivery before the first door.</p>
+
+  <h2>Good to know</h2>
+  <dl class="sp__faq">
+    <dt>How much is it?</dt><dd>The seller lists it at $69.99, marked down from $139.99. Check the link above for the current price before you order.</dd>
+    <dt>How fast does it ship?</dt><dd>The seller quotes 3 to 5 working days to any US address, with tracking.</dd>
+    <dt>What if we don't like it?</dt><dd>The seller offers a 30-day money-back guarantee.</dd>
+    <dt>Is it LEGO?</dt><dd>No. It is an independent brick design and is not affiliated with or endorsed by the LEGO Group.</dd>
+    <dt>Is it safe for small children?</dt><dd>It contains small parts and is not suitable for children under 8.</dd>
+    <dt>Who sells it?</dt><dd>GadgetsWatcher. Ordering, payment, shipping and returns are handled by the seller, not by {{ site_name }}.</dd>
+  </dl>
+
+  <figure class="sp__fig"><img src="{{ img }}tree.jpg" alt="Finished brick ornaments hanging on a Christmas tree" loading="lazy"></figure>
+
+  <a class="sp__cta" href="{{ cta_url }}" rel="nofollow sponsored noopener" target="_blank">Check availability and today's price »</a>
+
+  <p class="sp__disclosure"><strong>Sponsored content.</strong> This page is an advertisement, not an editorial article. {{ site_name }} is paid a commission when readers buy through the links on this page. Product details, pricing, shipping times and the money-back guarantee are stated by the seller, GadgetsWatcher, and may change without notice; {{ site_name }} does not sell or ship this product.</p>
+</article>
+<a class="lp-sticky" href="{{ cta_url }}" rel="nofollow sponsored noopener" target="_blank">Check the price <span>· $69.99 today</span></a>
+{% endblock %}

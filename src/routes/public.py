@@ -421,6 +421,32 @@ def welcome():
                            latest=latest, emailed=welcome_email_enabled())
 
 
+# ---- sponsored product pages (advertorials for affiliate offers) ----------------------------
+
+SPONSORED_PAGES = {
+    "brick-advent-calendar": {"template": "sponsored/brick_advent.html", "images": "brick-advent", "tag": "lp-brick-advent",
+                              "offer": "https://www.g8mv2trk.com/2P9J9R/2PQ3DFS/"},
+}
+SPONSORED_SOURCES = ("nl", "feed", "direct")  # where the reader came from: newsletter native ad, site grid, anything else
+
+
+@public_bp.route("/sponsored/<slug>/")
+def sponsored_page(slug):
+    """Standalone advertorial; the CTA goes straight to the Everflow offer link. sub1 = pda-web, sub2 = page,
+    sub3 = source, sub4 = newsletter issue, sub5 = newsletter slot, so the network report splits by all of them."""
+    page = SPONSORED_PAGES.get(slug)
+    if not page:
+        abort(404)
+    src = request.args.get("src", "direct")
+    src = src if src in SPONSORED_SOURCES else "direct"
+    clean = lambda k: re.sub(r"[^A-Za-z0-9_-]", "", request.args.get(k, ""))[:40]  # noqa: E731
+    cta = f"{page['offer']}?sub1=pda-web&sub2={page['tag']}&sub3={src}&sub4={clean('c')}&sub5={clean('s')}"
+    resp = make_response(render_template(page["template"], cta_url=cta, copy=_landing_copy(),  # copy: the landing pixels
+                                         img=url_for("static", filename=f"img/sponsored/{page['images']}/")))
+    resp.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return resp
+
+
 @public_bp.route("/remove-from-our-email-list/")
 def unsubscribe_page():
     return render_template("unsubscribe.html", email=request.args.get("email", ""))

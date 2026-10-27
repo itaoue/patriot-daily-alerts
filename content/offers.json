@@ -672,6 +672,21 @@
       "weight": 10,
       "active": true,
       "feed_image_url": "/static/img/sponsors/feed-gadget-gnome-rug.jpg"
+    },
+    {
+      "name": "Sponsored page - brick advent calendar",
+      "category": "advent",
+      "headline": "A Christmas Advent Calendar You Build: 24 Mini Brick Ornaments, One Every Evening",
+      "blurb": "Open a door, build a tiny ornament in ten minutes, hang it on the tree. 24 evenings, 24 keepsakes.",
+      "cta": "Learn More",
+      "url": "https://patriotdailyalerts.com/sponsored/brick-advent-calendar/?src=feed",
+      "image_url": "/static/img/sponsors/gadget-brick-advent.jpg",
+      "feed_image_url": "/static/img/sponsors/feed-gadget-brick-advent.jpg",
+      "label": "Sponsored",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 10,
+      "active": true
     }
   ]
 }

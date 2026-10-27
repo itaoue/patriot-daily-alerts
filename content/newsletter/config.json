@@ -432,6 +432,17 @@
         "headline": "Best Christmas Gift: Here Are 28+ Of The Coolest Gifts For 2026",
         "advertiser": "Gadgets Laboratory",
         "cta": "Learn More"
+      },
+      {
+        "name": "gifts-brick-advent",
+        "image": "/static/img/sponsors/photo-gifts-brick-advent.jpg",
+        "alt": "A Christmas Advent Calendar You Build: 24 Mini Brick Ornaments, One Every Evening",
+        "headline": "A Christmas Advent Calendar You Build: 24 Mini Brick Ornaments, One Every Evening",
+        "advertiser": "GadgetsWatcher",
+        "cta": "Learn More",
+        "url": "https://patriotdailyalerts.com/sponsored/brick-advent-calendar/?src=nl&c={campaign}&s={slot}",
+        "group": "advent",
+        "active": true
       }
     ]
   },

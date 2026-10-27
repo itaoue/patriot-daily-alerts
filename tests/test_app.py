@@ -621,6 +621,16 @@ def test_landing_page_variants_and_utm_passthrough(client):
     assert client.get("/join/?h=nonsense").status_code == 200  # unknown variant falls back to default copy
 
 
+def test_sponsored_page_cta_carries_source(client):
+    r = client.get("/sponsored/brick-advent-calendar/?src=nl&c=2026-10-28-daily&s=top")
+    assert r.status_code == 200 and r.headers["X-Robots-Tag"].startswith("noindex")
+    assert b"g8mv2trk.com/2P9J9R/2PQ3DFS/?sub1=pda-web&amp;sub2=lp-brick-advent&amp;sub3=nl&amp;sub4=2026-10-28-daily&amp;sub5=top" in r.data
+    assert b"Sponsored content" in r.data and b"mh-main-nav" not in r.data
+    r = client.get("/sponsored/brick-advent-calendar/?src=<x>&c=../etc")
+    assert b"sub3=direct&amp;sub4=etc&amp;sub5=" in r.data  # unknown source and odd characters are dropped
+    assert client.get("/sponsored/nope/").status_code == 404
+
+
 def test_landing_signup_tags_source_and_redirects_to_welcome(client):
     r = client.post("/api/subscribe", data={
         "email": "lp@example.com", "source": "landing", "utm_source": "Taboola", "utm_campaign": "Sept 09", "next": "/welcome/",
