@@ -710,13 +710,13 @@
       "blurb": "",
       "cta": "Shop Now",
       "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id={subid}",
-      "image_url": "/static/img/sponsors/gadget-veggie-chopper.jpg",
+      "image_url": "/static/img/sponsors/gadget-veggie-chopper-v2.jpg",
       "label": "Gadgets Laboratory",
       "placement": "feed",
       "audience": "all",
       "weight": 10,
       "active": true,
-      "feed_image_url": "/static/img/sponsors/feed-gadget-veggie-chopper.jpg"
+      "feed_image_url": "/static/img/sponsors/feed-gadget-veggie-chopper-v2.jpg"
     },
     {
       "name": "Gadgets listicle - green-fidget",
