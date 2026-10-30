@@ -520,6 +520,116 @@
         "headline": "Ready Hour 4-Week Food Supply: 2,000+ Calories a Day, Stores Up to 25 Years",
         "advertiser": "My Patriot Supply",
         "cta": "Shop Now"
+      },
+      {
+        "name": "mps-3month",
+        "image": "/static/img/sponsors/photo-mps-3month.jpg",
+        "alt": "3 Months of Food for One Person: 846 Servings, Up to a 25-Year Shelf Life",
+        "url": "https://www.rzmaf8trk.com/25QRCXX/2CTPL/?uid=29",
+        "group": "mps",
+        "active": true,
+        "headline": "3 Months of Food for One Person: 846 Servings, Up to a 25-Year Shelf Life",
+        "advertiser": "My Patriot Supply",
+        "cta": "Shop Now"
+      },
+      {
+        "name": "mps-6month",
+        "image": "/static/img/sponsors/photo-mps-6month.jpg",
+        "alt": "A 6-Month Emergency Food Supply: 2,000+ Calories a Day for One Person",
+        "url": "https://www.rzmaf8trk.com/25QRCXX/2CTPL/?uid=86",
+        "group": "mps",
+        "active": true,
+        "headline": "A 6-Month Emergency Food Supply: 2,000+ Calories a Day for One Person",
+        "advertiser": "My Patriot Supply",
+        "cta": "Shop Now"
+      },
+      {
+        "name": "mps-72hour",
+        "image": "/static/img/sponsors/photo-mps-72hour.jpg",
+        "alt": "Try Ready Hour Emergency Food for $34.99 With This 72-Hour Sample Pack",
+        "url": "https://www.rzmaf8trk.com/25QRCXX/2CTPL/?uid=68",
+        "group": "mps",
+        "active": true,
+        "headline": "Try Ready Hour Emergency Food for $34.99 With This 72-Hour Sample Pack",
+        "advertiser": "My Patriot Supply",
+        "cta": "Try It"
+      },
+      {
+        "name": "mps-carkit",
+        "image": "/static/img/sponsors/photo-mps-carkit.jpg",
+        "alt": "Stuck on the Road This Winter? This Car Kit Packs Food, Water and 47 Emergency Items",
+        "url": "https://www.rzmaf8trk.com/25QRCXX/2CTPL/?uid=61",
+        "group": "mps-gear",
+        "active": true,
+        "headline": "Stuck on the Road This Winter? This Car Kit Packs Food, Water and 47 Emergency Items",
+        "advertiser": "My Patriot Supply",
+        "cta": "See What's Inside"
+      },
+      {
+        "name": "mps-flashlight",
+        "image": "/static/img/sponsors/photo-mps-flashlight.jpg",
+        "alt": "This Tactical Flashlight Also Breaks Car Glass and Cuts Seatbelts",
+        "url": "https://www.rzmaf8trk.com/25QRCXX/2CTPL/?uid=89",
+        "group": "mps-gear",
+        "active": true,
+        "headline": "This Tactical Flashlight Also Breaks Car Glass and Cuts Seatbelts",
+        "advertiser": "Grid Doctor",
+        "cta": "Learn More"
+      },
+      {
+        "name": "gd-3300",
+        "image": "/static/img/sponsors/photo-gd-3300.jpg",
+        "alt": "America's Power Grid Is on Borrowed Time. This Solar Generator Comes With EMP Protection",
+        "url": "https://www.rzmaf8trk.com/25QRCXX/KMKS9/?uid=21",
+        "group": "grid-doctor",
+        "active": true,
+        "headline": "America's Power Grid Is on Borrowed Time. This Solar Generator Comes With EMP Protection",
+        "advertiser": "Grid Doctor",
+        "cta": "Learn More"
+      },
+      {
+        "name": "gd-300",
+        "image": "/static/img/sponsors/photo-gd-300.jpg",
+        "alt": "A Portable Solar Generator That Runs a CPAP for 8+ Hours When the Power Goes Out",
+        "url": "https://www.rzmaf8trk.com/25QRCXX/3QQG7/?uid=48",
+        "group": "grid-doctor",
+        "active": true,
+        "headline": "A Portable Solar Generator That Runs a CPAP for 8+ Hours When the Power Goes Out",
+        "advertiser": "Be Prepared",
+        "cta": "Shop Now"
+      },
+      {
+        "name": "if-emberoven",
+        "image": "/static/img/sponsors/photo-if-emberoven.jpg",
+        "alt": "Bake Pizza Anywhere: The Ember Portable Oven by InstaFire",
+        "url": "https://www.rzmaf8trk.com/25QRCXX/3QQG7/?uid=95",
+        "group": "instafire",
+        "active": true,
+        "headline": "Bake Pizza Anywhere: The Ember Portable Oven by InstaFire",
+        "advertiser": "Be Prepared",
+        "cta": "Shop Now"
+      },
+      {
+        "name": "if-instafire",
+        "image": "/static/img/sponsors/photo-if-instafire.jpg",
+        "alt": "The Fire Starter That Lights on Snow, Damp Ground, Even Standing Water",
+        "url": "https://www.rzmaf8trk.com/25QRCXX/GTSC3/",
+        "group": "instafire",
+        "active": true,
+        "headline": "The Fire Starter That Lights on Snow, Damp Ground, Even Standing Water",
+        "advertiser": "InstaFire",
+        "cta": "Learn More"
+      },
+      {
+        "name": "ap-alexapure",
+        "image": "/static/img/sponsors/photo-ap-alexapure.jpg",
+        "alt": "This Countertop Filter Reduces 206 Contaminants Found in Drinking Water",
+        "url": "https://www.rzmaf8trk.com/25QRCXX/FGXLG/",
+        "group": "alexapure",
+        "active": true,
+        "headline": "This Countertop Filter Reduces 206 Contaminants Found in Drinking Water",
+        "advertiser": "Alexapure",
+        "cta": "Get Clean Water"
       }
     ]
   },
