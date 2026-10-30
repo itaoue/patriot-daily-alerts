@@ -777,6 +777,21 @@
       "weight": 10,
       "active": true,
       "feed_image_url": "/static/img/sponsors/feed-gadget-bead-fidget.jpg"
+    },
+    {
+      "name": "My Patriot Supply - 4-week food supply",
+      "category": "products",
+      "headline": "Ready Hour 4-Week Food Supply: 2,000+ Calories a Day, Stores Up to 25 Years",
+      "blurb": "Two buckets of Ready Hour meals: 16 breakfast, lunch and dinner varieties, 2,000+ calories a day for one person.",
+      "cta": "Shop Now",
+      "url": "https://www.rzmaf8trk.com/25QRCXX/2CTPL/?uid=16&sub1=pda-web&sub2={offer}&sub3={page}&sub4={click}&sub5={segment}",
+      "image_url": "/static/img/sponsors/mps-4week.jpg",
+      "label": "My Patriot Supply",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 10,
+      "active": true,
+      "feed_image_url": "/static/img/sponsors/feed-mps-4week.jpg"
     }
   ]
 }
