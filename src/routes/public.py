@@ -275,6 +275,13 @@ def _is_bot() -> bool:
 
 
 FEED_SIZE = 6  # "You May Like" grid under a story: all sponsored cards
+# grid test: while any active offer's category starts with this, the grid shows only those ("" turns it off)
+FEED_ONLY_CATEGORY = "ra-"
+
+
+def _feed_only(pool: list) -> list:
+    test = [o for o in pool if FEED_ONLY_CATEGORY and (o.category or "").startswith(FEED_ONLY_CATEGORY)]
+    return test or pool
 
 
 def _rotate(pool: list, limit: int) -> list:
@@ -293,7 +300,7 @@ def _feed_ads() -> list:
     pool = [o for o in Offer.query.filter_by(active=True).order_by(Offer.weight.desc(), Offer.id.desc())
             if (o.placement or "poll") in ("feed", "both") and (o.feed_image_url or o.image_url)
             and offer_visible(o.audience or "all", band)]
-    ads = _rotate(pool, FEED_SIZE)
+    ads = _rotate(_feed_only(pool), FEED_SIZE)
     if ads and not _is_bot():
         Offer.query.filter(Offer.id.in_([o.id for o in ads])).update(
             {Offer.impressions: Offer.impressions + 1}, synchronize_session=False)
