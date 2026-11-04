@@ -630,6 +630,72 @@
         "headline": "This Countertop Filter Reduces 206 Contaminants Found in Drinking Water",
         "advertiser": "Alexapure",
         "cta": "Get Clean Water"
+      },
+      {
+        "name": "gifts-mini-washer",
+        "image": "/static/img/sponsors/photo-gifts-mini-washer.jpg",
+        "alt": "29+ Coolest Gifts Nobody Would Think Of",
+        "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id=pda_{campaign}_{slot}_{banner}",
+        "group": "gifts",
+        "active": true,
+        "headline": "29+ Coolest Gifts Nobody Would Think Of",
+        "advertiser": "Gadgets Laboratory",
+        "cta": "Learn More"
+      },
+      {
+        "name": "gifts-robo-shoes",
+        "image": "/static/img/sponsors/photo-gifts-robo-shoes.jpg",
+        "alt": "23 Must-Have Gadgets That Are Selling Out This Month",
+        "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id=pda_{campaign}_{slot}_{banner}",
+        "group": "gifts",
+        "active": true,
+        "headline": "23 Must-Have Gadgets That Are Selling Out This Month",
+        "advertiser": "Gadgets Laboratory",
+        "cta": "Learn More"
+      },
+      {
+        "name": "gifts-sleep-pod",
+        "image": "/static/img/sponsors/photo-gifts-sleep-pod.jpg",
+        "alt": "These Are the Coolest Gifts on Everyone's Wishlist in 2026",
+        "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id=pda_{campaign}_{slot}_{banner}",
+        "group": "gifts",
+        "active": true,
+        "headline": "These Are the Coolest Gifts on Everyone's Wishlist in 2026",
+        "advertiser": "Gadgets Laboratory",
+        "cta": "Learn More"
+      },
+      {
+        "name": "gifts-ice-cream-maker",
+        "image": "/static/img/sponsors/photo-gifts-ice-cream-maker.jpg",
+        "alt": "Here Are the Coolest 23+ Gifts for 2026. Avoid the Holiday Rush Now",
+        "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id=pda_{campaign}_{slot}_{banner}",
+        "group": "gifts",
+        "active": true,
+        "headline": "Here Are the Coolest 23+ Gifts for 2026. Avoid the Holiday Rush Now",
+        "advertiser": "Gadgets Laboratory",
+        "cta": "Learn More"
+      },
+      {
+        "name": "gifts-pasta-maker",
+        "image": "/static/img/sponsors/photo-gifts-pasta-maker.jpg",
+        "alt": "27+ Clever Gifts That Are Downright Genius",
+        "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id=pda_{campaign}_{slot}_{banner}",
+        "group": "gifts",
+        "active": true,
+        "headline": "27+ Clever Gifts That Are Downright Genius",
+        "advertiser": "Gadgets Laboratory",
+        "cta": "Learn More"
+      },
+      {
+        "name": "gifts-rock-engraver",
+        "image": "/static/img/sponsors/photo-gifts-rock-engraver.jpg",
+        "alt": "Shoppers Are Getting This Gift Before the 2026 Holiday Season",
+        "url": "https://united.seniordiscount.us/click.php?key=nl1nap90yl67pzghn0dn&external_id=pda_{campaign}_{slot}_{banner}",
+        "group": "gifts",
+        "active": true,
+        "headline": "Shoppers Are Getting This Gift Before the 2026 Holiday Season",
+        "advertiser": "Gadgets Laboratory",
+        "cta": "Learn More"
       }
     ]
   },
