@@ -1032,6 +1032,51 @@
       "weight": 10,
       "active": true,
       "feed_image_url": "/static/img/sponsors/feed-gadget-rock-engraver.jpg"
+    },
+    {
+      "name": "My Patriot Supply - mps-general",
+      "category": "ra-mps-general",
+      "headline": "Winter Brings More Than Snow and Ice: Get Ready for Power Outages and Closed Roads",
+      "blurb": "My Patriot Supply's winter readiness picks: emergency food, heat, water and backup power for the whole family.",
+      "cta": "Learn More",
+      "url": "https://www.rzmaf8trk.com/25QRCXX/2CTPL/?sub1=pda-web&sub2={offer}&sub3={page}&sub4={click}&sub5={segment}",
+      "image_url": "/static/img/sponsors/mps-general.jpg",
+      "label": "My Patriot Supply",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 20,
+      "active": true,
+      "feed_image_url": "/static/img/sponsors/feed-mps-general.jpg"
+    },
+    {
+      "name": "My Patriot Supply - mps-food",
+      "category": "ra-mps-food",
+      "headline": "Emergency Food That Stores Up to 25 Years: Ready Hour Kits From 3 Days to 6 Months",
+      "blurb": "Breakfasts, dinners and drinks in buckets and pouches, 2,000+ calories a day, from a $34.99 sample pack up.",
+      "cta": "Shop Now",
+      "url": "https://www.rzmaf8trk.com/25QRCXX/2CTPL/?uid=22&sub1=pda-web&sub2={offer}&sub3={page}&sub4={click}&sub5={segment}",
+      "image_url": "/static/img/sponsors/mps-food.jpg",
+      "label": "My Patriot Supply",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 20,
+      "active": true,
+      "feed_image_url": "/static/img/sponsors/feed-mps-food.jpg"
+    },
+    {
+      "name": "My Patriot Supply - mps-generators",
+      "category": "ra-mps-generators",
+      "headline": "No Gas, No Fumes: Solar Generators That Keep the Lights On in an Outage",
+      "blurb": "Grid Doctor solar generators and panels, from the portable 300 to the 3300 home-backup system with EMP protection.",
+      "cta": "Shop Now",
+      "url": "https://www.rzmaf8trk.com/25QRCXX/2CTPL/?uid=23&sub1=pda-web&sub2={offer}&sub3={page}&sub4={click}&sub5={segment}",
+      "image_url": "/static/img/sponsors/mps-generators.jpg",
+      "label": "My Patriot Supply",
+      "placement": "feed",
+      "audience": "all",
+      "weight": 20,
+      "active": true,
+      "feed_image_url": "/static/img/sponsors/feed-mps-generators.jpg"
     }
   ]
 }

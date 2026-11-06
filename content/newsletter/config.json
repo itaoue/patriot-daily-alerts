@@ -696,6 +696,39 @@
         "headline": "Shoppers Are Getting This Gift Before the 2026 Holiday Season",
         "advertiser": "Gadgets Laboratory",
         "cta": "Learn More"
+      },
+      {
+        "name": "mps-general",
+        "image": "/static/img/sponsors/photo-mps-general.jpg",
+        "alt": "Winter Brings More Than Snow and Ice: Get Ready for Power Outages and Closed Roads",
+        "url": "https://www.rzmaf8trk.com/25QRCXX/2CTPL/",
+        "group": "mps-home",
+        "active": true,
+        "headline": "Winter Brings More Than Snow and Ice: Get Ready for Power Outages and Closed Roads",
+        "advertiser": "My Patriot Supply",
+        "cta": "Learn More"
+      },
+      {
+        "name": "mps-food",
+        "image": "/static/img/sponsors/photo-mps-food.jpg",
+        "alt": "Emergency Food That Stores Up to 25 Years: Ready Hour Kits From 3 Days to 6 Months",
+        "url": "https://www.rzmaf8trk.com/25QRCXX/2CTPL/?uid=22",
+        "group": "mps",
+        "active": true,
+        "headline": "Emergency Food That Stores Up to 25 Years: Ready Hour Kits From 3 Days to 6 Months",
+        "advertiser": "My Patriot Supply",
+        "cta": "Shop Now"
+      },
+      {
+        "name": "mps-generators",
+        "image": "/static/img/sponsors/photo-mps-generators.jpg",
+        "alt": "No Gas, No Fumes: Solar Generators That Keep the Lights On in an Outage",
+        "url": "https://www.rzmaf8trk.com/25QRCXX/2CTPL/?uid=23",
+        "group": "grid-doctor",
+        "active": true,
+        "headline": "No Gas, No Fumes: Solar Generators That Keep the Lights On in an Outage",
+        "advertiser": "My Patriot Supply",
+        "cta": "Shop Now"
       }
     ]
   },
