@@ -39,7 +39,7 @@ jobs:
       STORY_AUTHOR: ${{ vars.STORY_AUTHOR || 'Joseph Sosa' }}   # byline on pipeline stories; override in repo Variables
       STORY_EFFORT: ${{ vars.STORY_EFFORT || 'medium' }}
       STORY_MODEL: ${{ vars.STORY_MODEL || 'claude-opus-5-5' }}
-      RESEARCH_MODEL: ${{ vars.RESEARCH_MODEL || 'claude-sonnet-5-5' }}
+      RESEARCH_MODEL: ${{ vars.RESEARCH_MODEL || 'claude-haiku-5-5' }}
       EDITOR_MODEL: ${{ vars.EDITOR_MODEL || 'claude-sonnet-5-5' }}
     steps:
       - uses: actions/checkout@v5
