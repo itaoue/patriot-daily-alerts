@@ -16,8 +16,10 @@ from flask import (
     session,
     url_for,
 )
+from markupsafe import escape
 from sqlalchemy import or_
 
+from src.scanners import from_cloud
 from src.models import (
     OFFER_SLOTS,
     SAVINGS_BAND_KEYS,
@@ -270,8 +272,10 @@ _BOT_UA = re.compile(r"bot|crawl|spider|slurp|preview|scan|proofpoint|mimecast|b
 
 
 def _is_bot() -> bool:
+    """Crawlers and email link scanners. Scanners that run a real browser are caught by address: they come
+    from cloud data centers (src/scanners.py), readers never do."""
     ua = request.user_agent.string or ""
-    return request.method == "HEAD" or not ua or bool(_BOT_UA.search(ua))
+    return request.method == "HEAD" or not ua or bool(_BOT_UA.search(ua)) or from_cloud()
 
 
 FEED_SIZE = 6  # "You May Like" grid under a story: all sponsored cards
@@ -330,7 +334,16 @@ def offer_click(offer_id):
     url = offer.url
     for macro, value in macros.items():
         url = url.replace(macro, value)
-    resp = redirect(url, 302)
+    if click.is_bot:
+        # a scanner opening the link: the network never sees the click, so its click and conversion
+        # counts stay readers only. A reader misjudged as one still has the button.
+        resp = make_response('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">'
+                             '<meta name="robots" content="noindex, nofollow"><title>Continue</title>'
+                             '<p style="font:18px/1.5 sans-serif;text-align:center;margin:3rem 1rem">'
+                             f'<a href="{escape(url)}" rel="sponsored noopener" style="background:#b22234;color:#fff;'
+                             'padding:.7rem 1.3rem;border-radius:6px;font-weight:700;text-decoration:none">Continue to the offer</a></p>')
+    else:
+        resp = redirect(url, 302)
     resp.headers["X-Robots-Tag"] = "noindex, nofollow"
     resp.headers["Cache-Control"] = "no-store"
     return resp

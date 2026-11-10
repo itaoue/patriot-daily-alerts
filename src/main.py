@@ -61,6 +61,10 @@ def create_app(config_object=Config) -> Flask:
     app.jinja_env.filters["datetime"] = format_datetime
     app.jinja_env.filters["ago"] = time_ago
 
+    def _scanner():
+        from src.routes.public import _is_bot
+        return _is_bot()
+
     @app.context_processor
     def inject_globals():
         return {
@@ -68,7 +72,8 @@ def create_app(config_object=Config) -> Flask:
             "site_url": app.config["SITE_URL"],
             "site_tagline": app.config["SITE_TAGLINE"],
             "contact_email": app.config["CONTACT_EMAIL"],
-            "ga_id": app.config["GA_MEASUREMENT_ID"],
+            # scanners get no GA tag, so GA sessions and events count readers only (src/scanners.py)
+            "ga_id": "" if _scanner() else app.config["GA_MEASUREMENT_ID"],
             "postal_address": app.config.get("POSTAL_ADDRESS", ""),
             "nav_categories": getattr(g, "nav_categories", []),
             "current_path": request.path,

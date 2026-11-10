@@ -810,3 +810,32 @@ def test_seo_title_overrides_page_title_but_not_headline(client):
     assert '<h1 class="entry-title">A Ring and Six Words' in html
     client.post("/api/publish", json={"slug": "a-ring-and-six-words", "update": True, "seo_title": ""}, headers=h)
     assert "<title>A Ring and Six Words" in client.get("/a-ring-and-six-words/").get_data(as_text=True)
+
+
+def test_cloud_scanners_get_no_votes_no_redirect_no_ga(client):
+    """Mail gateways open links from cloud data centers in a real browser (src/scanners.py)."""
+    from flask import current_app
+
+    from src.models import Offer, OfferClick, Poll, PollVote, db
+
+    chrome = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
+    scanner = {"User-Agent": chrome, "CF-Connecting-IP": "34.123.4.5"}   # Google Cloud
+    reader = {"User-Agent": chrome, "CF-Connecting-IP": "73.15.20.1"}    # residential ISP
+    current_app.config["GA_MEASUREMENT_ID"] = "G-TEST123"
+    assert b"googletagmanager" not in client.get("/", headers=scanner).data
+    assert b"googletagmanager" in client.get("/", headers=reader).data
+
+    offer = Offer(name="Scan test", headline="Scan offer", url="https://aff.example/s?sub={subid}", weight=1)
+    poll = Poll(campaign="scan-test", question="Scanned?", options='["Yes", "No"]')
+    db.session.add_all([offer, poll])
+    db.session.commit()
+
+    r = client.get(f"/go/{offer.id}/", headers=scanner)
+    assert r.status_code == 200 and b"Continue to the offer" in r.data and b"https://aff.example/s?sub=" in r.data
+    assert OfferClick.query.filter_by(offer_id=offer.id, is_bot=True).count() == 1
+    r = client.get(f"/go/{offer.id}/", headers=reader)
+    assert r.status_code == 302 and OfferClick.query.filter_by(offer_id=offer.id, is_bot=False).count() == 1
+
+    client.get(f"/poll/{poll.id}/vote/0/", headers=scanner)
+    assert PollVote.query.filter_by(poll_id=poll.id).count() == 0
+    current_app.config["GA_MEASUREMENT_ID"] = ""
