@@ -12,6 +12,9 @@
       "top",
       "mid"
     ],
+    "groups": [
+      "gifts"
+    ],
     "overrides": {
       "2026-10-24": {
         "top": "gifts-fidget-28",
@@ -83,7 +86,7 @@
       },
       "2026-11-10": {
         "top": "gifts-fidget-28",
-        "mid": "mps-4week"
+        "mid": "gifts-mini-washer"
       }
     },
     "banners": [

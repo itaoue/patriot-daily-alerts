@@ -101,14 +101,21 @@ def trending_block(items, campaign):
 
 
 def pick_sponsors(date_et):
-    """Two banners per issue (top slot, mid slot), advancing one step through the active list each day;
-    the two slots never show the same creative, or two look-alikes that share a "group"."""
+    """Two banners per issue (top slot, mid slot), advancing through the active list (or the "groups" subset) each day;
+    the two slots never show the same creative, and avoid two look-alikes that share a "group" when another group is available."""
     cfg = CONFIG.get("sponsors") or {}
     banners = [b for b in cfg.get("banners", []) if b.get("active", True) and b.get("image") and b.get("url")]
     if not cfg.get("enabled") or not banners:
         return {}
-    n = date_et.toordinal()
-    order = banners[n % len(banners):] + banners[: n % len(banners)]
+    # "groups": ["gifts"] limits the daily rotation to those creatives (an override can still pin any active banner)
+    groups = cfg.get("groups")
+    pool = [b for b in banners if b.get("group") in groups] if groups else banners
+    pool = pool or banners
+    # step by the number of slots, so tomorrow's pair never repeats today's mid creative in the top slot; the extra
+    # one-step shift per full lap keeps an even-sized pool from locking each creative into the same slot forever
+    step = date_et.toordinal() * len(cfg.get("slots", ["top", "mid"]))
+    n = step + step // len(pool)
+    order = pool[n % len(pool):] + pool[: n % len(pool)]
     # "overrides": {"YYYY-MM-DD": {"mid": "<banner name>"}} pins a creative to a slot for one issue
     pinned = (cfg.get("overrides") or {}).get(date_et.strftime("%Y-%m-%d"), {})
     picked = {k: b for k, name in pinned.items() for b in banners if b["name"] == name}

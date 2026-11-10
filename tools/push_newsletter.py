@@ -2,7 +2,7 @@
 """
 Push a built newsletter issue to BigMailer as a campaign (draft by default).
 
-    python tools/push_newsletter.py 2026-09-08-am              # create a DRAFT campaign; send/schedule inside BigMailer
+    python tools/push_newsletter.py 2026-09-08-am              # create a DRAFT campaign (or update that issue's unsent draft)
     python tools/push_newsletter.py 2026-09-08-am --ready      # mark it ready so BigMailer sends it
     python tools/push_newsletter.py 2026-09-08-am --dry-run
     python tools/push_newsletter.py --brands | --lists         # discover ids
@@ -37,6 +37,24 @@ def all_lists(brand):
     r = requests.get(f"{BM}/brands/{brand}/lists?limit=100", headers=headers(), timeout=30)
     r.raise_for_status()
     return r.json().get("data", [])
+
+
+def recent_campaigns(brand):
+    """The brand's bulk campaigns (all pages); empty on any API error, so a lookup failure only means a new draft."""
+    out, cursor = [], ""
+    try:
+        for _ in range(20):
+            r = requests.get(f"{BM}/brands/{brand}/bulk-campaigns?limit=100" + (f"&cursor={cursor}" if cursor else ""),
+                             headers=headers(), timeout=30)
+            r.raise_for_status()
+            j = r.json()
+            out += j.get("data", [])
+            cursor = j.get("cursor") or ""
+            if not j.get("has_more") or not cursor:
+                break
+    except (requests.RequestException, ValueError) as exc:
+        print(f"  could not list campaigns ({exc}); creating a new one")
+    return out
 
 
 def main():
@@ -85,6 +103,14 @@ def main():
     print(f"brand {b.get('name')} | from {from_name} <{from_email}> | {list_desc} | subject '{issue['subject']}' | html {len(html):,} chars | ready={a.ready}")
     if a.dry_run:
         print("dry run: nothing created")
+        return
+    # a rebuilt issue (same name) replaces its unsent draft instead of leaving a second campaign beside it
+    draft = next((c for c in recent_campaigns(brand) if c.get("name") == payload["name"] and c.get("status") == "draft"), None)
+    if draft:
+        r = requests.post(f"{BM}/brands/{brand}/bulk-campaigns/{draft['id']}", headers=headers(), json=payload, timeout=60)
+        if r.status_code >= 300:
+            sys.exit(f"BigMailer error updating draft {draft['id']} {r.status_code}: {r.text[:400]}")
+        print(f"draft updated: id {draft['id']}")
         return
     r = requests.post(f"{BM}/brands/{brand}/bulk-campaigns", headers=headers(), json=payload, timeout=60)
     if r.status_code >= 300:
