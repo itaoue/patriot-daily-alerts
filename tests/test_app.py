@@ -459,7 +459,7 @@ def test_vote_links_bind_bigmailer_contact(client, monkeypatch):
     class FakeResp:
         status_code, text = 200, "{}"
 
-    monkeypatch.setattr(api.requests, "patch", lambda url, **kw: calls.append((url, kw)) or FakeResp())
+    monkeypatch.setattr(api.requests, "post", lambda url, **kw: calls.append((url, kw)) or FakeResp())
     current_app.config.update(PUBLISH_TOKEN="t0k3n", BIGMAILER_API_KEY="k", BIGMAILER_BRAND_ID="brand")
     try:
         pid = client.post("/api/polls", json={"campaign": "contact-test", "question": "Contact poll?", "options": ["A", "B"]},
@@ -477,6 +477,10 @@ def test_vote_links_bind_bigmailer_contact(client, monkeypatch):
         client.get(f"/poll/{pid}/vote/1/?c={cid}", headers={"User-Agent": "Mozilla/5.0 Android"})
         votes = PollVote.query.filter_by(poll_id=pid).all()
         assert len(votes) == 1 and votes[0].choice == 1 and votes[0].contact_id == cid
+        # the first real click puts the subscriber on the poll-clickers list (once per poll; scanners never do)
+        assert len(calls) == 1 and calls[0][0].endswith(f"/brands/brand/contacts/{cid}")
+        assert calls[0][1]["params"] == {"list_ids_op": "add"}
+        assert calls[0][1]["json"] == {"list_ids": [current_app.config["BIGMAILER_POLL_LIST_ID"]]}
 
         client.get(f"/poll/{pid}/vote/0/?c=*|_ID|*", headers={"User-Agent": "Mozilla/5.0 Firefox"})  # web copy: raw tag
         assert PollVote.query.filter_by(poll_id=pid).count() == 1  # bmc cookie from the earlier click still identifies them
@@ -498,7 +502,11 @@ def test_vote_links_bind_bigmailer_contact(client, monkeypatch):
         client.delete_cookie("q_sav")
         client.delete_cookie("bmc")
         client.post(f"/poll/{pid}/qualify", data={"savings": "20k"}, headers=ua)  # anonymous reader: no BigMailer call
-        assert len(calls) == 1
+        assert len(calls) == 2
+
+        r = client.post("/api/polls/sync-clickers", headers={"Authorization": "Bearer t0k3n"})  # backfill of past voters
+        assert r.get_json() == {"ok": True, "contacts": 1} and calls[-1][1]["params"] == {"list_ids_op": "add"}
+        assert client.post("/api/polls/sync-clickers").status_code == 401
     finally:
         current_app.config.update(BIGMAILER_API_KEY="", BIGMAILER_BRAND_ID="")
         for name in ("q_sav", "rid", "bmc"):

@@ -2,12 +2,14 @@ import json
 import logging
 import re
 import secrets
+import threading
+import time
 from datetime import datetime, timedelta
 
 import requests
 from flask import Blueprint, current_app, jsonify, redirect, render_template, request, url_for
 
-from src.models import OFFER_AUDIENCES, OFFER_PLACEMENTS, Category, ContactMessage, Offer, Poll, Post, Subscriber, db, utcnow
+from src.models import OFFER_AUDIENCES, OFFER_PLACEMENTS, Category, ContactMessage, Offer, Poll, PollVote, Post, Subscriber, db, utcnow
 from src.utils import make_excerpt, sanitize_html, slugify, valid_email
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -35,7 +37,7 @@ def set_bigmailer_field(contact_id: str, name: str, value: str) -> bool:
     if not (cfg["BIGMAILER_API_KEY"] and cfg["BIGMAILER_BRAND_ID"] and contact_id and name):
         return False
     try:
-        r = requests.patch(
+        r = requests.post(
             f"https://api.bigmailer.io/v1/brands/{cfg['BIGMAILER_BRAND_ID']}/contacts/{contact_id}",
             params={"field_values_op": "add"},
             headers={"X-API-Key": cfg["BIGMAILER_API_KEY"], "Content-Type": "application/json"},
@@ -48,6 +50,44 @@ def set_bigmailer_field(contact_id: str, name: str, value: str) -> bool:
     except requests.RequestException as exc:  # never block the reader on a third-party failure
         log.warning("bigmailer field update failed: %s", exc)
         return False
+
+
+def _add_to_list_now(key: str, brand: str, list_id: str, contact_ids: list[str]) -> int:
+    """list_ids_op=add keeps the contact's other lists. Returns how many contacts were updated."""
+    done = 0
+    for cid in contact_ids:
+        try:
+            for attempt in range(3):
+                r = requests.post(
+                    f"https://api.bigmailer.io/v1/brands/{brand}/contacts/{cid}",
+                    params={"list_ids_op": "add"},
+                    headers={"X-API-Key": key, "Content-Type": "application/json"},
+                    json={"list_ids": [list_id]},
+                    timeout=8,
+                )
+                if r.status_code != 429:
+                    break
+                time.sleep(2 * (attempt + 1))
+            if r.status_code >= 400:  # 404 = contact deleted since the email went out
+                log.warning("bigmailer list add failed for %s: %s %s", cid, r.status_code, r.text[:200])
+            else:
+                done += 1
+        except requests.RequestException as exc:  # never block the reader on a third-party failure
+            log.warning("bigmailer list add failed for %s: %s", cid, exc)
+    return done
+
+
+def add_poll_clickers(contact_ids: list[str]) -> bool:
+    """Put subscribers who clicked a poll answer on the BigMailer "poll clickers" list, off the request thread."""
+    cfg = current_app.config
+    args = (cfg["BIGMAILER_API_KEY"], cfg["BIGMAILER_BRAND_ID"], cfg["BIGMAILER_POLL_LIST_ID"], [c for c in contact_ids if c])
+    if not all(args):
+        return False
+    if cfg.get("TESTING"):
+        _add_to_list_now(*args)
+    else:
+        threading.Thread(target=_add_to_list_now, args=args, daemon=True).start()
+    return True
 
 
 def _wants_json() -> bool:
@@ -346,6 +386,15 @@ def create_poll():
     return jsonify(ok=True, id=poll.id, question=poll.question, options=poll.option_list,
                    results_url=f"{site}{url_for('public.poll_results', poll_id=poll.id)}",
                    vote_urls=[f"{site}{url_for('public.poll_vote', poll_id=poll.id, choice=i)}" for i in range(len(poll.option_list))])
+
+
+@api_bp.route("/polls/sync-clickers", methods=["POST"])
+def sync_poll_clickers():
+    """Backfill: add every subscriber who ever voted from an email link to the BigMailer poll-clickers list."""
+    if not _pipeline_authorized():
+        return jsonify(error="unauthorized"), 401
+    ids = [c for (c,) in db.session.query(PollVote.contact_id).filter(PollVote.contact_id != "").distinct()]
+    return jsonify(ok=add_poll_clickers(ids), contacts=len(ids))
 
 
 @api_bp.route("/polls/<int:poll_id>")

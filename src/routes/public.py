@@ -203,6 +203,10 @@ def poll_vote(poll_id, choice):
         elif not (request.cookies.get(f"pv{poll.id}") or PollVote.query.filter_by(poll_id=poll.id, voter=voter).first()):
             db.session.add(PollVote(poll_id=poll.id, choice=choice, voter=voter, contact_id=contact))
         db.session.commit()
+        if contact and not row:  # first click on this poll by this subscriber; later clicks only change the answer
+            from src.routes.api import add_poll_clickers
+
+            add_poll_clickers([contact])
     resp = redirect(url_for("public.poll_results", poll_id=poll.id, voted=1))
     resp.set_cookie(f"pv{poll.id}", str(choice), max_age=60 * 60 * 24 * 90, samesite="Lax")
     _remember_reader(resp, contact=contact)
